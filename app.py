@@ -6,6 +6,7 @@ import threading
 import queue
 import uuid
 import datetime
+import json
 
 from flask import (
     Flask, render_template, request, redirect,
@@ -15,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from models import (
     engine, Base, Project, Job, Media, Config,
-    get_session, ensure_default_configs
+    get_session, ensure_default_configs, ensure_job_columns
 )
 import motion_pipeline
 
@@ -29,13 +30,15 @@ app = Flask(__name__)
 app.secret_key = "change-this-secret"
 
 Base.metadata.create_all(bind=engine)
+ensure_job_columns()
 ensure_default_configs()
 
 JOB_QUEUE: "queue.Queue[int]" = queue.Queue()
 
 
 def enqueue_job(project_id: int, audio_path: str, video_path: str,
-                title: str = "", tags: str = "", config_id: int | None = None) -> int:
+                title: str = "", tags: str = "", config_id: int | None = None,
+                job_type: str = "standard", wizard_data: str | None = None) -> int:
     db: Session = get_session()
     try:
         job = Job(
@@ -49,6 +52,8 @@ def enqueue_job(project_id: int, audio_path: str, video_path: str,
             title=title or "Job",
             tags=tags or "",
             config_id=config_id,
+            job_type=job_type,
+            wizard_data=wizard_data,
             created_at=datetime.datetime.now(),
             updated_at=datetime.datetime.now(),
         )
@@ -411,6 +416,8 @@ def jobs_requeue(job_id: int):
             title=job.title,
             tags=job.tags,
             config_id=job.config_id,
+            job_type=job.job_type or "standard",
+            wizard_data=job.wizard_data,
         )
         flash(f"جاب جدید #{new_id} از روی این جاب ساخته شد.", "success")
         return redirect(url_for("jobs_detail", job_id=new_id))
@@ -434,6 +441,13 @@ def jobs_new():
             job_tags = request.form.get("job_tags") or ""
             config_id_val = request.form.get("config_id")
             config_id = int(config_id_val) if config_id_val else None
+
+            job_type = (request.form.get("job_type") or "standard").strip() or "standard"
+            overlay_text = request.form.get("overlay_text") or ""
+            text_color = request.form.get("text_color") or "#ffffff"
+            accent_color = request.form.get("accent_color") or "#ec4899"
+            text_size = request.form.get("text_size") or "32"
+            preview_note = request.form.get("preview_note") or ""
 
             job_audio = request.files.get("job_audio")
             job_video = request.files.get("job_video")
@@ -462,6 +476,15 @@ def jobs_new():
             audio_path = _save_upload(job_audio, subdir)
             video_path = _save_upload(job_video, subdir)
 
+            wizard_payload = json.dumps({
+                "overlay_text": overlay_text,
+                "text_color": text_color,
+                "accent_color": accent_color,
+                "text_size": text_size,
+                "preview_note": preview_note,
+                "config_id": config_id,
+            }, ensure_ascii=False)
+
             job_id = enqueue_job(
                 project_id=project.id,
                 audio_path=audio_path,
@@ -469,6 +492,8 @@ def jobs_new():
                 title=job_title,
                 tags=job_tags,
                 config_id=config_id,
+                job_type=job_type,
+                wizard_data=wizard_payload,
             )
 
             if new_project:
@@ -506,7 +531,12 @@ def jobs_detail(job_id: int):
         if not job:
             flash("جاب پیدا نشد.", "error")
             return redirect(url_for("jobs_list"))
-        return render_template("job_detail.html", job=job)
+        wizard_payload = {}
+        try:
+            wizard_payload = json.loads(job.wizard_data or "{}") if job.wizard_data else {}
+        except Exception:
+            wizard_payload = {"raw": job.wizard_data}
+        return render_template("job_detail.html", job=job, wizard_payload=wizard_payload)
     finally:
         db.close()
 

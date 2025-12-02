@@ -29,9 +29,23 @@
   <p><strong>پروژه:</strong> <a href="{{ url_for('project_detail', project_id=job.project_id) }}">{{ job.project.name }}</a></p>
   <p><strong>عنوان جاب:</strong> {{ job.title or ('Job #' ~ job.id) }}</p>
   <p><strong>تگ‌ها:</strong> <span class="muted">{{ job.tags }}</span></p>
+  <p><strong>نوع جاب:</strong> <span class="badge">{{ job.job_type or 'standard' }}</span></p>
   <p><strong>مسیر صوت:</strong> <span class="muted">{{ job.audio_path }}</span></p>
   <p><strong>مسیر ویدیو:</strong> <span class="muted">{{ job.video_path }}</span></p>
   <p><strong>کانفیگ:</strong> <span class="muted">{% if job.config %}{{ job.config.name }}{% if job.config.music_type == 'iranian' %} · ایرانی{% elif job.config.music_type == 'foreign' %} · خارجی{% else %} · عمومی{% endif %}{% else %}پیش‌فرض{% endif %}</span></p>
+  {% if wizard_payload %}
+  <div class="muted" style="margin:8px 0;">
+    <strong>خلاصه تنظیمات ویزارد:</strong>
+    <ul style="margin:6px 0 0 0; padding-right:18px;">
+      {% if wizard_payload.overlay_text %}<li>متن روی تصویر: {{ wizard_payload.overlay_text }}</li>{% endif %}
+      {% if wizard_payload.text_color %}<li>رنگ متن: {{ wizard_payload.text_color }}</li>{% endif %}
+      {% if wizard_payload.text_size %}<li>سایز متن: {{ wizard_payload.text_size }}</li>{% endif %}
+      {% if wizard_payload.accent_color %}<li>رنگ هایلایت: {{ wizard_payload.accent_color }}</li>{% endif %}
+      {% if wizard_payload.preview_note %}<li>یادداشت پیش‌نمایش: {{ wizard_payload.preview_note }}</li>{% endif %}
+      {% if wizard_payload.raw %}<li>داده خام: {{ wizard_payload.raw }}</li>{% endif %}
+    </ul>
+  </div>
+  {% endif %}
   <p><strong>وضعیت:</strong> <span id="status-badge" class="badge {{ job.status }}">{{ job.status }}</span></p>
   <div class="progress-bar-container">
     <div id="progress-fill" class="progress-bar-fill" style="width: {{ job.progress }}%;"></div>

@@ -235,7 +235,7 @@
             <div class="nav-group-title">بخش‌ها</div>
             <a href="{{ url_for('projects_list') }}" class="nav-link {% if request.path.startswith('/projects') %}active{% endif %}">پروژه‌ها</a>
             <a href="{{ url_for('jobs_list') }}" class="nav-link {% if request.path.startswith('/jobs') and not request.path.startswith('/jobs/new') %}active{% endif %}">جاب‌ها</a>
-            <a href="{{ url_for('jobs_new') }}" class="nav-link {% if request.path.startswith('/jobs/new') %}active{% endif %}">جاب جدید</a>
+            <a href="{{ url_for('jobs_new') }}" class="nav-link {% if request.path.startswith('/jobs/new') %}active{% endif %}">ویزارد جاب</a>
             <a href="{{ url_for('media_list') }}" class="nav-link {% if request.path.startswith('/media') %}active{% endif %}">مدیاها</a>
             <a href="{{ url_for('projects_list') }}#new" class="nav-link">پروژه جدید</a>
             <div class="nav-group-title" style="margin-top:12px;">تنظیمات</div>
