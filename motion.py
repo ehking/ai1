@@ -22,6 +22,7 @@ class FarsiKinetic(Scene):
         meta = load_meta()
         visual = meta.get("visual", {})
         text_cfg = visual.get("text", {})
+        video_cfg = visual.get("video", {})  # موجود برای هماهنگی با بخش ویدیو
 
         font_name = visual.get("font_name", "Yekan")
         primary_color = visual.get("primary_color", "#F9F5FF")

@@ -20,6 +20,8 @@ from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "app.db")
+# NOTE: For SQLite, add/remove columns by deleting app.db once to recreate tables or
+# write a migration script; keep backups of your media/output paths if you do that.
 
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
@@ -38,6 +40,7 @@ class Project(Base):
     name = Column(String(255), nullable=False, unique=True)
     audio_path = Column(Text, nullable=False)
     video_path = Column(Text, nullable=False)
+    music_type = Column(String(16), default="iranian")  # iranian | foreign
     created_at = Column(DateTime, default=datetime.datetime.now)
 
     jobs = relationship("Job", back_populates="project", cascade="all, delete-orphan")
@@ -56,6 +59,8 @@ class Config(Base):
     bg_color = Column(String(32), default="#050510")
     border_color = Column(String(32), default="#FFFFFF")
     font_name = Column(String(128), default="Yekan")
+
+    music_type = Column(String(16), nullable=True)  # None: عمومی
 
     advanced_json = Column(Text, default="{}")
 
@@ -155,13 +160,14 @@ def ensure_default_configs():
 
         presets = [
             Config(
-                name="تیره کالیگرافی",
+                name="تیره کالیگرافی ایرانی",
                 description="پس‌زمینه‌ی تیره و متن روشن با پالس نرم روی ضرب.",
                 primary_color="#F9F5FF",
                 accent_color="#ec4899",
-                bg_color="#020617",
+                bg_color="#0b1220",
                 border_color="#94a3b8",
                 font_name="Yekan",
+                music_type="iranian",
                 advanced_json=_json.dumps({
                     "text": {
                         "base_scale": 1.5,
@@ -182,26 +188,28 @@ def ensure_default_configs():
                 bg_color="#3b2516",
                 border_color="#facc15",
                 font_name="Yekan",
+                music_type="iranian",
                 advanced_json=_json.dumps({
                     "text": {
-                        "base_scale": 1.4,
+                        "base_scale": 1.35,
                         "rotate_deg": -12,
                         "stroke_width": 4.0,
-                        "pulse_rt": 0.1
+                        "pulse_rt": 0.11
                     },
                     "video": {
-                        "filter_chain": "curves=vintage, eq=saturation=0.9:gamma=0.95"
+                        "filter_chain": "curves=vintage, eq=saturation=0.92:gamma=0.96"
                     }
                 }, ensure_ascii=False),
             ),
             Config(
-                name="نئونی مدرن",
-                description="نئون بنفش/سبز برای تم‌های مدرن.",
+                name="نئونی مدرن خارجی",
+                description="نئون بنفش/سبز برای تم‌های مدرن خارجی.",
                 primary_color="#a855f7",
                 accent_color="#22c55e",
-                bg_color="#020617",
+                bg_color="#0f172a",
                 border_color="#22c55e",
                 font_name="Yekan",
+                music_type="foreign",
                 advanced_json=_json.dumps({
                     "text": {
                         "base_scale": 1.3,
@@ -210,7 +218,70 @@ def ensure_default_configs():
                         "pulse_rt": 0.07
                     },
                     "video": {
-                        "filter_chain": "eq=saturation=1.2:contrast=1.1, curves=negative"
+                        "filter_chain": "eq=saturation=1.2:contrast=1.12, curves=negative"
+                    }
+                }, ensure_ascii=False),
+            ),
+            Config(
+                name="نوستالژیک خارجی",
+                description="تم سینماتیک با کنتراست بالا برای قطعات خارجی.",
+                primary_color="#e2e8f0",
+                accent_color="#22d3ee",
+                bg_color="#0b1220",
+                border_color="#475569",
+                font_name="Yekan",
+                music_type="foreign",
+                advanced_json=_json.dumps({
+                    "text": {
+                        "base_scale": 1.25,
+                        "rotate_deg": -6,
+                        "stroke_width": 3.8,
+                        "pulse_rt": 0.08
+                    },
+                    "video": {
+                        "filter_chain": "eq=brightness=1.02:contrast=1.15:saturation=1.05, vignette"
+                    }
+                }, ensure_ascii=False),
+            ),
+            Config(
+                name="موج رنگی عمومی",
+                description="کانفیگ عمومی با موج رنگی ویدیو.",
+                primary_color="#f8fafc",
+                accent_color="#fb7185",
+                bg_color="#1f2937",
+                border_color="#e5e7eb",
+                font_name="Yekan",
+                music_type=None,
+                advanced_json=_json.dumps({
+                    "text": {
+                        "base_scale": 1.4,
+                        "rotate_deg": -10,
+                        "stroke_width": 4.2,
+                        "pulse_rt": 0.1
+                    },
+                    "video": {
+                        "filter_chain": "colorbalance=rs=.2:gs=-.05:bs=-.05, curves=strong_contrast"
+                    }
+                }, ensure_ascii=False),
+            ),
+            Config(
+                name="مینیمال روشن",
+                description="متن مینیمال با پس‌زمینه‌ی روشن و کنتراست نرم.",
+                primary_color="#0f172a",
+                accent_color="#f59e0b",
+                bg_color="#f8fafc",
+                border_color="#cbd5e1",
+                font_name="Yekan",
+                music_type=None,
+                advanced_json=_json.dumps({
+                    "text": {
+                        "base_scale": 1.15,
+                        "rotate_deg": -3,
+                        "stroke_width": 2.8,
+                        "pulse_rt": 0.12
+                    },
+                    "video": {
+                        "filter_chain": "eq=contrast=1.03:saturation=1.08"
                     }
                 }, ensure_ascii=False),
             ),

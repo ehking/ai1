@@ -32,6 +32,7 @@ Base.metadata.create_all(bind=engine)
 ensure_default_configs()
 
 JOB_QUEUE: "queue.Queue[int]" = queue.Queue()
+ALLOWED_MUSIC_TYPES = {"iranian", "foreign"}
 
 
 def enqueue_job(project_id: int, audio_path: str, video_path: str,
@@ -154,6 +155,34 @@ def _save_upload(file_obj, subdir: str) -> str:
     return path
 
 
+def _normalize_music_type(value: str | None, default: str = "iranian") -> str:
+    if value in ALLOWED_MUSIC_TYPES:
+        return value
+    return default
+
+
+def _filter_configs_for_project(configs, music_type: str | None):
+    if not music_type:
+        return configs
+    return [c for c in configs if (c.music_type is None or c.music_type == music_type)]
+
+
+def _render_projects_page(db: Session, music_filter: str | None = None, default_music_type: str = "iranian"):
+    configs = db.query(Config).order_by(Config.created_at.desc()).all()
+    query = db.query(Project)
+    if music_filter in ALLOWED_MUSIC_TYPES:
+        query = query.filter(Project.music_type == music_filter)
+    projects = query.order_by(Project.created_at.desc()).all()
+    create_music_type = _normalize_music_type(default_music_type, default="iranian")
+    return render_template(
+        "projects.html",
+        projects=projects,
+        configs=configs,
+        create_music_type=create_music_type,
+        active_music_filter=music_filter,
+    )
+
+
 @app.route("/")
 def root():
     return redirect(url_for("projects_list"))
@@ -173,12 +202,23 @@ def configs_list():
             bg_color = request.form.get("bg_color") or "#050510"
             border_color = request.form.get("border_color") or "#FFFFFF"
             font_name = request.form.get("font_name") or "Yekan"
-            advanced_json = request.form.get("advanced_json") or "{}"
+            music_type_val = request.form.get("music_type") or None
+            if music_type_val not in ("iranian", "foreign"):
+                music_type_val = None
+
+            text_json_raw = request.form.get("advanced_json_text") or "{}"
+            video_json_raw = request.form.get("advanced_json_video") or "{}"
             try:
-                json.loads(advanced_json)
+                text_cfg = json.loads(text_json_raw)
+                video_cfg = json.loads(video_json_raw)
             except Exception:
                 flash("فرمت JSON نادرست است.", "error")
                 return redirect(url_for("configs_list"))
+
+            advanced_json = json.dumps({
+                "text": text_cfg,
+                "video": video_cfg,
+            }, ensure_ascii=False)
 
             cfg = Config(
                 name=name,
@@ -188,6 +228,7 @@ def configs_list():
                 bg_color=bg_color,
                 border_color=border_color,
                 font_name=font_name,
+                music_type=music_type_val,
                 advanced_json=advanced_json,
                 created_at=datetime.datetime.now(),
             )
@@ -220,18 +261,37 @@ def configs_edit(config_id: int):
             cfg.bg_color = request.form.get("bg_color") or cfg.bg_color
             cfg.border_color = request.form.get("border_color") or cfg.border_color
             cfg.font_name = request.form.get("font_name") or cfg.font_name
-            advanced_json = request.form.get("advanced_json") or "{}"
+            music_type_val = request.form.get("music_type") or None
+            if music_type_val not in ("iranian", "foreign"):
+                music_type_val = None
+            cfg.music_type = music_type_val
+
+            text_json_raw = request.form.get("advanced_json_text") or "{}"
+            video_json_raw = request.form.get("advanced_json_video") or "{}"
             try:
-                json.loads(advanced_json)
+                text_cfg = json.loads(text_json_raw)
+                video_cfg = json.loads(video_json_raw)
             except Exception:
                 flash("فرمت JSON نادرست است.", "error")
                 return redirect(url_for("configs_edit", config_id=config_id))
-            cfg.advanced_json = advanced_json
+
+            cfg.advanced_json = json.dumps({
+                "text": text_cfg,
+                "video": video_cfg,
+            }, ensure_ascii=False)
             db.commit()
             flash("کانفیگ به‌روزرسانی شد.", "success")
             return redirect(url_for("configs_list"))
 
-        return render_template("configs_edit.html", cfg=cfg)
+        try:
+            import json
+            adv = json.loads(cfg.advanced_json or "{}")
+        except Exception:
+            adv = {}
+        text_raw = json.dumps(adv.get("text", {}), ensure_ascii=False, indent=2)
+        video_raw = json.dumps(adv.get("video", {}), ensure_ascii=False, indent=2)
+
+        return render_template("configs_edit.html", cfg=cfg, text_raw=text_raw, video_raw=video_raw)
     finally:
         db.close()
 
@@ -241,14 +301,13 @@ def configs_edit(config_id: int):
 def projects_list():
     db: Session = get_session()
     try:
-        configs = db.query(Config).order_by(Config.created_at.desc()).all()
-
         if request.method == "POST":
             name = request.form.get("name") or "پروژه بدون نام"
             job_title = request.form.get("job_title") or "Job"
             job_tags = request.form.get("job_tags") or ""
             config_id_val = request.form.get("config_id")
             config_id = int(config_id_val) if config_id_val else None
+            music_type_val = _normalize_music_type(request.form.get("music_type"), default="iranian")
 
             existing = db.query(Project).filter(Project.name == name).first()
             audio_file = request.files.get("audio")
@@ -291,6 +350,7 @@ def projects_list():
                 name=name,
                 audio_path=audio_path,
                 video_path=video_path,
+                music_type=music_type_val,
                 created_at=datetime.datetime.now(),
             )
             db.add(project)
@@ -308,8 +368,25 @@ def projects_list():
             flash(f"پروژه '{project.name}' ساخته شد و جاب #{job_id} به صف اضافه شد.", "success")
             return redirect(url_for("project_detail", project_id=project.id))
 
-        projects = db.query(Project).order_by(Project.created_at.desc()).all()
-        return render_template("projects.html", projects=projects, configs=configs)
+        return _render_projects_page(db, music_filter=None, default_music_type="iranian")
+    finally:
+        db.close()
+
+
+@app.route("/projects/iranian")
+def projects_iranian():
+    db: Session = get_session()
+    try:
+        return _render_projects_page(db, music_filter="iranian", default_music_type="iranian")
+    finally:
+        db.close()
+
+
+@app.route("/projects/foreign")
+def projects_foreign():
+    db: Session = get_session()
+    try:
+        return _render_projects_page(db, music_filter="foreign", default_music_type="foreign")
     finally:
         db.close()
 
@@ -325,7 +402,15 @@ def project_detail(project_id: int):
         jobs = db.query(Job).filter(Job.project_id == project_id).order_by(Job.created_at.desc()).all()
         medias = db.query(Media).filter(Media.project_id == project_id).order_by(Media.created_at.desc()).all()
         configs = db.query(Config).order_by(Config.created_at.desc()).all()
-        return render_template("project_detail.html", project=project, jobs=jobs, medias=medias, configs=configs)
+        filtered_configs = _filter_configs_for_project(configs, project.music_type)
+        return render_template(
+            "project_detail.html",
+            project=project,
+            jobs=jobs,
+            medias=medias,
+            configs=configs,
+            filtered_configs=filtered_configs,
+        )
     finally:
         db.close()
 
@@ -410,13 +495,20 @@ def jobs_requeue(job_id: int):
 def jobs_list():
     db: Session = get_session()
     try:
-        projects = db.query(Project).order_by(Project.created_at.desc()).all()
+        filter_type = request.args.get("type")
+        if filter_type not in ALLOWED_MUSIC_TYPES:
+            filter_type = None
+
+        projects_query = db.query(Project)
+        if filter_type:
+            projects_query = projects_query.filter(Project.music_type == filter_type)
+        projects = projects_query.order_by(Project.created_at.desc()).all()
         proj_jobs = []
         for p in projects:
             jobs = db.query(Job).filter(Job.project_id == p.id).order_by(Job.created_at.desc()).all()
             if jobs:
                 proj_jobs.append((p, jobs))
-        return render_template("jobs.html", proj_jobs=proj_jobs)
+        return render_template("jobs.html", proj_jobs=proj_jobs, filter_type=filter_type)
     finally:
         db.close()
 

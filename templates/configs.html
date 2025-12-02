@@ -11,24 +11,34 @@
       <div><label>پس‌زمینه</label><input type="text" name="bg_color" value="#020617"></div>
       <div><label>رنگ قاب</label><input type="text" name="border_color" value="#94a3b8"></div>
       <div><label>فونت</label><input type="text" name="font_name" value="Yekan"></div>
+      <div><label>نوع موسیقی</label>
+        <select name="music_type">
+          <option value="">عمومی</option>
+          <option value="iranian">ایرانی</option>
+          <option value="foreign">خارجی</option>
+        </select>
+      </div>
     </div>
     <div style="margin-top:8px;">
       <label>توضیح</label>
       <input type="text" name="description" placeholder="توضیح کوتاه">
     </div>
     <div style="margin-top:8px;">
-      <label>تنظیمات پیشرفته (JSON)</label>
-      <textarea name="advanced_json" dir="ltr" style="font-family:monospace;font-size:12px;">
+      <label>تنظیمات متن (JSON)</label>
+      <textarea name="advanced_json_text" dir="ltr" style="font-family:monospace;font-size:12px;">
 {
-  "text": {
-    "base_scale": 1.4,
-    "rotate_deg": -10,
-    "stroke_width": 4.0,
-    "pulse_rt": 0.09
-  },
-  "video": {
-    "filter_chain": "eq=contrast=1.08:saturation=1.1, vignette"
-  }
+  "base_scale": 1.3,
+  "rotate_deg": -8,
+  "stroke_width": 4.0,
+  "pulse_rt": 0.1
+}
+      </textarea>
+    </div>
+    <div style="margin-top:8px;">
+      <label>تنظیمات ویدیو (JSON)</label>
+      <textarea name="advanced_json_video" dir="ltr" style="font-family:monospace;font-size:12px;">
+{
+  "filter_chain": "eq=contrast=1.08:saturation=1.1, vignette"
 }
       </textarea>
     </div>
@@ -42,11 +52,14 @@
   <h2>لیست کانفیگ‌ها</h2>
   {% if configs %}
   <table>
-    <thead><tr><th>نام</th><th>توضیح</th><th>رنگ‌ها</th><th>زمان</th><th></th></tr></thead>
+    <thead><tr><th>نام</th><th>نوع</th><th>توضیح</th><th>رنگ‌ها</th><th>زمان</th><th></th></tr></thead>
     <tbody>
       {% for c in configs %}
       <tr>
         <td>{{ c.name }}</td>
+        <td class="muted">
+          {% if c.music_type == 'foreign' %}خارجی{% elif c.music_type == 'iranian' %}ایرانی{% else %}عمومی{% endif %}
+        </td>
         <td class="muted">{{ c.description }}</td>
         <td class="muted">
           متن: {{ c.primary_color }} / اکسنت: {{ c.accent_color }}<br>

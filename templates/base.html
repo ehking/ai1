@@ -18,6 +18,11 @@
             --text-main-dark: #f9fafb;
             --text-muted-dark: #9ca3af;
 
+            --sidebar-bg-dark: #0b1220;
+            --sidebar-bg-light: #111827;
+            --sidebar-text-dark: #e5e7eb;
+            --sidebar-text-light: #e5e7eb;
+
             --bg-main-light: #f3f4f6;
             --bg-card-light: #ffffff;
             --border-light: #e5e7eb;
@@ -30,6 +35,8 @@
             --border-color: var(--border-dark);
             --text-main: var(--text-main-dark);
             --text-muted: var(--text-muted-dark);
+            --sidebar-bg: var(--sidebar-bg-dark);
+            --sidebar-text: var(--sidebar-text-dark);
         }
         [data-theme="light"] {
             --bg-main: var(--bg-main-light);
@@ -37,6 +44,8 @@
             --border-color: var(--border-light);
             --text-main: var(--text-main-light);
             --text-muted: var(--text-muted-light);
+            --sidebar-bg: var(--sidebar-bg-light);
+            --sidebar-text: var(--sidebar-text-light);
         }
         body {
             font-family: "YekanWeb", "Yekan", "IRANSans", "Vazirmatn", sans-serif;
@@ -56,28 +65,29 @@
         }
         .sidebar {
             width: 220px;
-            background: linear-gradient(180deg, #020617, #020617);
+            background: var(--sidebar-bg);
             border-left: 1px solid var(--border-color);
             padding: 16px 12px;
             display: flex;
             flex-direction: column;
             gap: 16px;
+            color: var(--sidebar-text);
         }
-        .brand { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-        .nav-group-title { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+        .brand { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        .nav-group-title { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; letter-spacing: 0.2px; }
         .nav-link {
             display: block;
-            font-size: 13px;
-            padding: 6px 10px;
+            font-size: 14px;
+            padding: 8px 12px;
             border-radius: 999px;
             margin-bottom: 4px;
-            color: var(--text-main);
+            color: var(--sidebar-text);
             border: 1px solid transparent;
             text-align: right;
         }
         .nav-link.active {
-            border-color: rgba(148,163,184,0.9);
-            background: rgba(15,23,42,0.95);
+            border-color: rgba(148,163,184,0.7);
+            background: rgba(15,23,42,0.75);
         }
         .theme-toggle {
             margin-top: auto;
@@ -223,9 +233,12 @@
         <div>
             <div class="brand">🎬 Farsi Motion</div>
             <div class="nav-group-title">بخش‌ها</div>
-            <a href="{{ url_for('projects_list') }}" class="nav-link {% if request.path.startswith('/projects') %}active{% endif %}">پروژه‌ها</a>
+            <a href="{{ url_for('projects_list') }}" class="nav-link {% if request.path.startswith('/projects') and not request.path.startswith('/projects/iranian') and not request.path.startswith('/projects/foreign') %}active{% endif %}">پروژه‌ها</a>
+            <a href="{{ url_for('projects_iranian') }}" class="nav-link {% if request.path.startswith('/projects/iranian') %}active{% endif %}">موزیک‌های ایرانی</a>
+            <a href="{{ url_for('projects_foreign') }}" class="nav-link {% if request.path.startswith('/projects/foreign') %}active{% endif %}">موزیک‌های خارجی</a>
             <a href="{{ url_for('jobs_list') }}" class="nav-link {% if request.path.startswith('/jobs') %}active{% endif %}">جاب‌ها</a>
             <a href="{{ url_for('media_list') }}" class="nav-link {% if request.path.startswith('/media') %}active{% endif %}">مدیاها</a>
+            <a href="{{ url_for('projects_list') }}#new" class="nav-link">پروژه جدید</a>
             <div class="nav-group-title" style="margin-top:12px;">تنظیمات</div>
             <a href="{{ url_for('configs_list') }}" class="nav-link {% if request.path.startswith('/configs') %}active{% endif %}">کانفیگ‌ها</a>
         </div>
