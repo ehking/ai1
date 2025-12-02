@@ -32,7 +32,6 @@ Base.metadata.create_all(bind=engine)
 ensure_default_configs()
 
 JOB_QUEUE: "queue.Queue[int]" = queue.Queue()
-ALLOWED_MUSIC_TYPES = {"iranian", "foreign"}
 
 
 def enqueue_job(project_id: int, audio_path: str, video_path: str,
@@ -155,34 +154,6 @@ def _save_upload(file_obj, subdir: str) -> str:
     return path
 
 
-def _normalize_music_type(value: str | None, default: str = "iranian") -> str:
-    if value in ALLOWED_MUSIC_TYPES:
-        return value
-    return default
-
-
-def _filter_configs_for_project(configs, music_type: str | None):
-    if not music_type:
-        return configs
-    return [c for c in configs if (c.music_type is None or c.music_type == music_type)]
-
-
-def _render_projects_page(db: Session, music_filter: str | None = None, default_music_type: str = "iranian"):
-    configs = db.query(Config).order_by(Config.created_at.desc()).all()
-    query = db.query(Project)
-    if music_filter in ALLOWED_MUSIC_TYPES:
-        query = query.filter(Project.music_type == music_filter)
-    projects = query.order_by(Project.created_at.desc()).all()
-    create_music_type = _normalize_music_type(default_music_type, default="iranian")
-    return render_template(
-        "projects.html",
-        projects=projects,
-        configs=configs,
-        create_music_type=create_music_type,
-        active_music_filter=music_filter,
-    )
-
-
 @app.route("/")
 def root():
     return redirect(url_for("projects_list"))
@@ -302,91 +273,36 @@ def projects_list():
     db: Session = get_session()
     try:
         if request.method == "POST":
-            name = request.form.get("name") or "پروژه بدون نام"
-            job_title = request.form.get("job_title") or "Job"
-            job_tags = request.form.get("job_tags") or ""
-            config_id_val = request.form.get("config_id")
-            config_id = int(config_id_val) if config_id_val else None
-            music_type_val = _normalize_music_type(request.form.get("music_type"), default="iranian")
+            name = (request.form.get("name") or "").strip()
+            description = request.form.get("description") or ""
+            if not name:
+                flash("نام پروژه را وارد کنید.", "error")
+                return redirect(url_for("projects_list"))
 
             existing = db.query(Project).filter(Project.name == name).first()
-            audio_file = request.files.get("audio")
-            video_file = request.files.get("video")
-
             if existing:
-                # اگر فایل جدید آپلود شده باشد، جایگزین می‌کنیم
-                if audio_file and audio_file.filename:
-                    subdir = f"project_{existing.id}"
-                    existing.audio_path = _save_upload(audio_file, subdir)
-                if video_file and video_file.filename:
-                    subdir = f"project_{existing.id}"
-                    existing.video_path = _save_upload(video_file, subdir)
+                existing.description = description
                 db.commit()
-
-                job_id = enqueue_job(
-                    project_id=existing.id,
-                    audio_path=existing.audio_path,
-                    video_path=existing.video_path,
-                    title=job_title,
-                    tags=job_tags,
-                    config_id=config_id,
-                )
-                flash(f"پروژه از قبل وجود داشت؛ جاب جدید #{job_id} ساخته شد.", "success")
+                flash("پروژه از قبل وجود داشت؛ توضیحات به‌روزرسانی شد.", "success")
                 return redirect(url_for("project_detail", project_id=existing.id))
-
-            if not audio_file or not audio_file.filename:
-                flash("فایل صوتی را انتخاب کنید.", "error")
-                return redirect(url_for("projects_list"))
-            if not video_file or not video_file.filename:
-                flash("فایل ویدیویی را انتخاب کنید.", "error")
-                return redirect(url_for("projects_list"))
-
-            stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            subdir = f"project_{stamp}"
-            audio_path = _save_upload(audio_file, subdir)
-            video_path = _save_upload(video_file, subdir)
 
             project = Project(
                 name=name,
-                audio_path=audio_path,
-                video_path=video_path,
-                music_type=music_type_val,
+                description=description,
                 created_at=datetime.datetime.now(),
             )
             db.add(project)
             db.commit()
             db.refresh(project)
-
-            job_id = enqueue_job(
-                project_id=project.id,
-                audio_path=audio_path,
-                video_path=video_path,
-                title=job_title,
-                tags=job_tags,
-                config_id=config_id,
-            )
-            flash(f"پروژه '{project.name}' ساخته شد و جاب #{job_id} به صف اضافه شد.", "success")
+            flash(f"پروژه '{project.name}' ساخته شد.", "success")
             return redirect(url_for("project_detail", project_id=project.id))
 
-        return _render_projects_page(db, music_filter=None, default_music_type="iranian")
-    finally:
-        db.close()
-
-
-@app.route("/projects/iranian")
-def projects_iranian():
-    db: Session = get_session()
-    try:
-        return _render_projects_page(db, music_filter="iranian", default_music_type="iranian")
-    finally:
-        db.close()
-
-
-@app.route("/projects/foreign")
-def projects_foreign():
-    db: Session = get_session()
-    try:
-        return _render_projects_page(db, music_filter="foreign", default_music_type="foreign")
+        projects = db.query(Project).order_by(Project.created_at.desc()).all()
+        job_counts = {
+            p.id: db.query(Job).filter(Job.project_id == p.id).count()
+            for p in projects
+        }
+        return render_template("projects.html", projects=projects, job_counts=job_counts)
     finally:
         db.close()
 
@@ -402,14 +318,12 @@ def project_detail(project_id: int):
         jobs = db.query(Job).filter(Job.project_id == project_id).order_by(Job.created_at.desc()).all()
         medias = db.query(Media).filter(Media.project_id == project_id).order_by(Media.created_at.desc()).all()
         configs = db.query(Config).order_by(Config.created_at.desc()).all()
-        filtered_configs = _filter_configs_for_project(configs, project.music_type)
         return render_template(
             "project_detail.html",
             project=project,
             jobs=jobs,
             medias=medias,
             configs=configs,
-            filtered_configs=filtered_configs,
         )
     finally:
         db.close()
@@ -429,10 +343,24 @@ def project_new_job(project_id: int):
         config_id_val = request.form.get("config_id")
         config_id = int(config_id_val) if config_id_val else None
 
+        job_audio = request.files.get("job_audio")
+        job_video = request.files.get("job_video")
+        if not job_audio or not job_audio.filename:
+            flash("فایل صوتی جاب را انتخاب کنید.", "error")
+            return redirect(url_for("project_detail", project_id=project.id))
+        if not job_video or not job_video.filename:
+            flash("فایل ویدیویی جاب را انتخاب کنید.", "error")
+            return redirect(url_for("project_detail", project_id=project.id))
+
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        subdir = f"project_{project.id}_job_{stamp}"
+        audio_path = _save_upload(job_audio, subdir)
+        video_path = _save_upload(job_video, subdir)
+
         job_id = enqueue_job(
             project_id=project.id,
-            audio_path=project.audio_path,
-            video_path=project.video_path,
+            audio_path=audio_path,
+            video_path=video_path,
             title=job_title,
             tags=job_tags,
             config_id=config_id,
@@ -490,25 +418,82 @@ def jobs_requeue(job_id: int):
         db.close()
 
 
+# ------------- Create new Job globally -------------
+@app.route("/jobs/new", methods=["GET", "POST"])
+def jobs_new():
+    db: Session = get_session()
+    try:
+        configs = db.query(Config).order_by(Config.created_at.desc()).all()
+        if request.method == "POST":
+            project_name = (request.form.get("project_name") or "").strip()
+            if not project_name:
+                flash("نام پروژه را وارد کنید.", "error")
+                return redirect(url_for("jobs_new"))
+
+            job_title = request.form.get("job_title") or "Job"
+            job_tags = request.form.get("job_tags") or ""
+            config_id_val = request.form.get("config_id")
+            config_id = int(config_id_val) if config_id_val else None
+
+            job_audio = request.files.get("job_audio")
+            job_video = request.files.get("job_video")
+            if not job_audio or not job_audio.filename:
+                flash("فایل صوتی را انتخاب کنید.", "error")
+                return redirect(url_for("jobs_new"))
+            if not job_video or not job_video.filename:
+                flash("فایل ویدیویی را انتخاب کنید.", "error")
+                return redirect(url_for("jobs_new"))
+
+            project = db.query(Project).filter(Project.name == project_name).first()
+            new_project = False
+            if not project:
+                project = Project(
+                    name=project_name,
+                    description="",
+                    created_at=datetime.datetime.now(),
+                )
+                db.add(project)
+                db.commit()
+                db.refresh(project)
+                new_project = True
+
+            stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            subdir = f"project_{project.id}_job_{stamp}"
+            audio_path = _save_upload(job_audio, subdir)
+            video_path = _save_upload(job_video, subdir)
+
+            job_id = enqueue_job(
+                project_id=project.id,
+                audio_path=audio_path,
+                video_path=video_path,
+                title=job_title,
+                tags=job_tags,
+                config_id=config_id,
+            )
+
+            if new_project:
+                flash(f"پروژه جدید '{project.name}' ساخته شد و جاب #{job_id} ثبت شد.", "success")
+            else:
+                flash(f"جاب #{job_id} برای پروژه '{project.name}' ساخته شد.", "success")
+            return redirect(url_for("jobs_detail", job_id=job_id))
+
+        return render_template("jobs_new.html", configs=configs)
+    finally:
+        db.close()
+
+
 # ------------- Jobs -------------
 @app.route("/jobs")
 def jobs_list():
     db: Session = get_session()
     try:
-        filter_type = request.args.get("type")
-        if filter_type not in ALLOWED_MUSIC_TYPES:
-            filter_type = None
-
-        projects_query = db.query(Project)
-        if filter_type:
-            projects_query = projects_query.filter(Project.music_type == filter_type)
-        projects = projects_query.order_by(Project.created_at.desc()).all()
+        projects = db.query(Project).order_by(Project.created_at.desc()).all()
         proj_jobs = []
         for p in projects:
             jobs = db.query(Job).filter(Job.project_id == p.id).order_by(Job.created_at.desc()).all()
             if jobs:
                 proj_jobs.append((p, jobs))
-        return render_template("jobs.html", proj_jobs=proj_jobs, filter_type=filter_type)
+        return render_template("jobs.html", proj_jobs=proj_jobs)
     finally:
         db.close()
 

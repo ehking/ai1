@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}جاب جدید{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>ایجاد جاب جدید</h2>
+  <form method="post" enctype="multipart/form-data">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+      <div>
+        <label>نام پروژه</label>
+        <input type="text" name="project_name" placeholder="مثلاً: پروژه کلیپ جدید" required>
+        <p class="muted" style="margin-top:4px;">اگر پروژه‌ای با این نام وجود نداشته باشد، ساخته می‌شود.</p>
+      </div>
+      <div>
+        <label>عنوان جاب</label>
+        <input type="text" name="job_title" placeholder="مثلاً: نسخه اینستاگرام">
+      </div>
+      <div>
+        <label>تگ‌ها</label>
+        <input type="text" name="job_tags" placeholder="vertical fast neon">
+      </div>
+      <div>
+        <label>کانفیگ ظاهری</label>
+        <select name="config_id">
+          <option value="">پیش‌فرض</option>
+          {% for c in configs %}
+          <option value="{{ c.id }}">{{ c.name }}{% if c.music_type == 'iranian' %} · ایرانی{% elif c.music_type == 'foreign' %} · خارجی{% else %} · عمومی{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>فایل صوتی</label>
+        <input type="file" name="job_audio" accept="audio/*" required>
+      </div>
+      <div>
+        <label>فایل ویدیویی</label>
+        <input type="file" name="job_video" accept="video/*" required>
+      </div>
+    </div>
+    <div style="margin-top:12px;text-align:left;">
+      <button type="submit">ثبت جاب</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
