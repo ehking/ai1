@@ -17,6 +17,7 @@ from sqlalchemy import (
     DateTime, Text, ForeignKey
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy import inspect
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "app.db")
@@ -100,6 +101,9 @@ class Job(Base):
 
     config_id = Column(Integer, ForeignKey("configs.id"), nullable=True)
 
+    job_type = Column(String(64), default="standard")
+    wizard_data = Column(Text, nullable=True)
+
     title = Column(String(255), nullable=True)
     tags = Column(String(512), nullable=True)
 
@@ -124,6 +128,8 @@ class Job(Base):
             "video_path": self.video_path,
             "output_path": self.output_path,
             "config_id": self.config_id,
+            "job_type": self.job_type,
+            "wizard_data": self.wizard_data,
             "title": self.title,
             "tags": self.tags,
             "status": self.status,
@@ -291,3 +297,22 @@ def ensure_default_configs():
         db.commit()
     finally:
         db.close()
+
+
+def ensure_job_columns():
+    """Ensure new Job columns exist even on older SQLite files."""
+    inspector = inspect(engine)
+    columns = {col['name'] for col in inspector.get_columns('jobs')}
+
+    alter_sql = []
+    if "job_type" not in columns:
+        alter_sql.append("ALTER TABLE jobs ADD COLUMN job_type VARCHAR(64) DEFAULT 'standard'")
+    if "wizard_data" not in columns:
+        alter_sql.append("ALTER TABLE jobs ADD COLUMN wizard_data TEXT")
+
+    if not alter_sql:
+        return
+
+    with engine.begin() as conn:
+        for stmt in alter_sql:
+            conn.exec_driver_sql(stmt)

@@ -1,44 +1,233 @@
 {% extends "base.html" %}
-{% block title %}جاب جدید{% endblock %}
+{% block title %}ویزارد جاب جدید{% endblock %}
+{% block extra_head %}
+<style>
+  .wizard-header {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;}
+  .step-dots {display:flex;gap:6px;align-items:center;}
+  .step-dot {width:12px;height:12px;border-radius:50%;border:1px solid var(--border-color);background:rgba(148,163,184,0.2);}
+  .step-dot.active {background:linear-gradient(135deg,#6366f1,#ec4899);box-shadow:0 0 0 3px rgba(99,102,241,0.18);}
+  .wizard-grid {display:grid;grid-template-columns:2fr 1.2fr;gap:16px;align-items:start;}
+  .wizard-step {display:none;gap:12px;}
+  .wizard-step.active {display:grid;}
+  .preview-shell {background:#0f172a;border:1px solid var(--border-color);border-radius:14px;padding:10px;position:sticky;top:16px;box-shadow:0 10px 30px rgba(0,0,0,0.25);} 
+  .live-preview {position:relative;border-radius:12px;overflow:hidden;background:#111827;border:1px dashed var(--border-color);min-height:260px;}
+  .live-preview video {width:100%;height:100%;object-fit:cover;display:block;}
+  .overlay-text {position:absolute;bottom:16px;right:16px;background:rgba(0,0,0,0.35);padding:8px 12px;border-radius:12px;font-weight:700;backdrop-filter:blur(8px);max-width:80%;}
+  .wizard-actions {display:flex;justify-content:space-between;align-items:center;margin-top:14px;}
+  .summary-box {background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:12px;padding:10px;font-size:12px;}
+  @media(max-width:960px){.wizard-grid{grid-template-columns:1fr;}.preview-shell{position:relative;}}
+</style>
+{% endblock %}
 {% block content %}
 <div class="card">
-  <h2>ایجاد جاب جدید</h2>
-  <form method="post" enctype="multipart/form-data">
-    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
-      <div>
-        <label>نام پروژه</label>
-        <input type="text" name="project_name" placeholder="مثلاً: پروژه کلیپ جدید" required>
-        <p class="muted" style="margin-top:4px;">اگر پروژه‌ای با این نام وجود نداشته باشد، ساخته می‌شود.</p>
-      </div>
-      <div>
-        <label>عنوان جاب</label>
-        <input type="text" name="job_title" placeholder="مثلاً: نسخه اینستاگرام">
-      </div>
-      <div>
-        <label>تگ‌ها</label>
-        <input type="text" name="job_tags" placeholder="vertical fast neon">
-      </div>
-      <div>
-        <label>کانفیگ ظاهری</label>
-        <select name="config_id">
-          <option value="">پیش‌فرض</option>
-          {% for c in configs %}
-          <option value="{{ c.id }}">{{ c.name }}{% if c.music_type == 'iranian' %} · ایرانی{% elif c.music_type == 'foreign' %} · خارجی{% else %} · عمومی{% endif %}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label>فایل صوتی</label>
-        <input type="file" name="job_audio" accept="audio/*" required>
-      </div>
-      <div>
-        <label>فایل ویدیویی</label>
-        <input type="file" name="job_video" accept="video/*" required>
-      </div>
+  <div class="wizard-header">
+    <div>
+      <h2 style="margin:0;">ویزارد ایجاد جاب جدید</h2>
+      <div class="muted">پیش از رندر، همه‌چیز را ببین، ویرایش کن و بعد تایید کن.</div>
     </div>
-    <div style="margin-top:12px;text-align:left;">
-      <button type="submit">ثبت جاب</button>
+    <div class="step-dots" id="step-dots"></div>
+  </div>
+
+  <form id="wizard-form" method="post" enctype="multipart/form-data">
+    <div class="wizard-grid">
+      <div>
+        <div class="wizard-step active" data-step="1" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+          <div>
+            <label>نام پروژه</label>
+            <input type="text" name="project_name" placeholder="مثلاً: پروژه کلیپ جدید" required>
+            <p class="muted" style="margin-top:4px;">اگر پروژه‌ای با این نام وجود نداشته باشد، ساخته می‌شود.</p>
+          </div>
+          <div>
+            <label>عنوان جاب</label>
+            <input type="text" name="job_title" placeholder="مثلاً: نسخه اینستاگرام">
+          </div>
+          <div>
+            <label>تگ‌ها</label>
+            <input type="text" name="job_tags" placeholder="vertical fast neon">
+          </div>
+          <div>
+            <label>نوع جاب</label>
+            <select name="job_type">
+              <option value="standard">نسخه کامل (پیش‌فرض)</option>
+              <option value="fast-preview">پیش‌نمایش سریع</option>
+              <option value="story">استوری عمودی</option>
+              <option value="snippet">بریده کوتاه</option>
+            </select>
+          </div>
+          <div>
+            <label>کانفیگ ظاهری</label>
+            <select name="config_id">
+              <option value="">پیش‌فرض</option>
+              {% for c in configs %}
+              <option value="{{ c.id }}">{{ c.name }}{% if c.music_type == 'iranian' %} · ایرانی{% elif c.music_type == 'foreign' %} · خارجی{% else %} · عمومی{% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="wizard-step" data-step="2" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+          <div>
+            <label>فایل صوتی</label>
+            <input type="file" name="job_audio" id="job-audio" accept="audio/*" required>
+            <audio id="audio-preview" controls style="width:100%;margin-top:10px;display:none;"></audio>
+          </div>
+          <div>
+            <label>فایل ویدیویی</label>
+            <input type="file" name="job_video" id="job-video" accept="video/*" required>
+            <div class="muted" style="margin-top:6px;">پیش‌نمایش ویدیوی خام در سمت راست قابل مشاهده است.</div>
+          </div>
+        </div>
+
+        <div class="wizard-step" data-step="3" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+          <div>
+            <label>متن روی تصویر</label>
+            <textarea name="overlay_text" id="overlay-text" placeholder="متن را اینجا بنویس...">سلام! این یک پیش‌نمایش آنی است.</textarea>
+            <label style="margin-top:10px;">رنگ متن</label>
+            <input type="color" name="text_color" id="text-color" value="#ffffff">
+          </div>
+          <div>
+            <label>رنگ هایلایت</label>
+            <input type="color" name="accent_color" id="accent-color" value="#ec4899">
+            <label style="margin-top:10px;">سایز متن (px)</label>
+            <input type="number" name="text_size" id="text-size" value="32" min="10" max="120">
+            <label style="margin-top:10px;">یادداشت برای پیش‌نمایش</label>
+            <input type="text" name="preview_note" id="preview-note" placeholder="مثلاً: متن بالای تصویر ۲۰٪ فضای امن">
+          </div>
+        </div>
+
+        <div class="wizard-step" data-step="4" style="grid-template-columns:1fr;">
+          <div class="summary-box" id="summary-box">
+            اطلاعات نهایی پس از تغییرات شما اینجا نمایش داده می‌شود.
+          </div>
+          <div class="muted">بعد از تایید، جاب در صف رندر قرار می‌گیرد و می‌توانید وضعیت را در صفحه جاب ببینید.</div>
+        </div>
+
+        <div class="wizard-actions">
+          <button type="button" id="prev-btn" disabled>مرحله قبل</button>
+          <div style="display:flex;gap:8px;">
+            <button type="button" id="next-btn">مرحله بعد</button>
+            <button type="submit" id="submit-btn" style="display:none;">تایید و ارسال برای رندر</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="preview-shell">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>پیش‌نمایش آنی</strong>
+          <span class="muted" style="font-size:11px;">بدون نیاز به رندر</span>
+        </div>
+        <div class="live-preview" id="live-preview">
+          <video id="video-preview" controls muted loop style="display:none;"></video>
+          <div class="overlay-text" id="overlay-preview">سلام! این یک پیش‌نمایش آنی است.</div>
+        </div>
+        <div class="muted" style="margin-top:8px;font-size:12px;">رنگ، سایز و متن را از چپ تنظیم کنید و نتیجه را زنده ببینید.</div>
+      </div>
     </div>
   </form>
 </div>
+
+<script>
+  const steps = Array.from(document.querySelectorAll('.wizard-step'));
+  const dots = document.getElementById('step-dots');
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const submitBtn = document.getElementById('submit-btn');
+  let currentStep = 1;
+
+  function renderDots(){
+    dots.innerHTML = '';
+    steps.forEach((_, idx)=>{
+      const d = document.createElement('div');
+      d.className = 'step-dot' + ((idx+1)===currentStep?' active':'');
+      dots.appendChild(d);
+    });
+  }
+
+  function showStep(step){
+    currentStep = Math.max(1, Math.min(step, steps.length));
+    steps.forEach(s=>{s.classList.toggle('active', Number(s.dataset.step)===currentStep);});
+    prevBtn.disabled = currentStep === 1;
+    nextBtn.style.display = currentStep === steps.length ? 'none' : 'inline-block';
+    submitBtn.style.display = currentStep === steps.length ? 'inline-block' : 'none';
+    renderDots();
+    refreshSummary();
+  }
+
+  nextBtn.addEventListener('click', ()=> showStep(currentStep + 1));
+  prevBtn.addEventListener('click', ()=> showStep(currentStep - 1));
+
+  renderDots();
+
+  const overlayPreview = document.getElementById('overlay-preview');
+  const overlayInput = document.getElementById('overlay-text');
+  const textColorInput = document.getElementById('text-color');
+  const accentColorInput = document.getElementById('accent-color');
+  const textSizeInput = document.getElementById('text-size');
+  const previewNoteInput = document.getElementById('preview-note');
+  const videoInput = document.getElementById('job-video');
+  const audioInput = document.getElementById('job-audio');
+  const videoPreview = document.getElementById('video-preview');
+  const audioPreview = document.getElementById('audio-preview');
+  const livePreview = document.getElementById('live-preview');
+  const summaryBox = document.getElementById('summary-box');
+
+  function updatePreview(){
+    overlayPreview.textContent = overlayInput.value || 'پیش‌نمایش بدون متن';
+    overlayPreview.style.color = textColorInput.value || '#ffffff';
+    overlayPreview.style.fontSize = (textSizeInput.value || 32) + 'px';
+    overlayPreview.style.textShadow = `0 0 18px ${accentColorInput.value || '#ec4899'}`;
+    livePreview.style.boxShadow = `0 0 0 2px ${accentColorInput.value || '#ec4899'}`;
+  }
+
+  function refreshSummary(){
+    const project = document.querySelector('input[name="project_name"]').value || '—';
+    const title = document.querySelector('input[name="job_title"]').value || 'بدون عنوان';
+    const tags = document.querySelector('input[name="job_tags"]').value || '—';
+    const type = document.querySelector('select[name="job_type"]').value || 'standard';
+    const overlayTxt = overlayInput.value || '—';
+    const tColor = textColorInput.value;
+    const tSize = textSizeInput.value || '—';
+    const accColor = accentColorInput.value;
+    const note = previewNoteInput.value || '—';
+    summaryBox.innerHTML = `
+      <div><strong>پروژه:</strong> ${project}</div>
+      <div><strong>عنوان جاب:</strong> ${title}</div>
+      <div><strong>تگ‌ها:</strong> ${tags}</div>
+      <div><strong>نوع جاب:</strong> ${type}</div>
+      <div><strong>متن:</strong> ${overlayTxt}</div>
+      <div><strong>رنگ متن:</strong> ${tColor} · <strong>سایز:</strong> ${tSize}px</div>
+      <div><strong>رنگ هایلایت:</strong> ${accColor}</div>
+      <div><strong>یادداشت:</strong> ${note}</div>
+      <div class="muted" style="margin-top:6px;">در مرحله آخر تأیید کنید تا جاب وارد صف شود.</div>
+    `;
+  }
+
+  overlayInput.addEventListener('input', ()=>{updatePreview(); refreshSummary();});
+  textColorInput.addEventListener('input', ()=>{updatePreview(); refreshSummary();});
+  accentColorInput.addEventListener('input', ()=>{updatePreview(); refreshSummary();});
+  textSizeInput.addEventListener('input', ()=>{updatePreview(); refreshSummary();});
+  previewNoteInput.addEventListener('input', refreshSummary);
+
+  videoInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(file){
+      const url = URL.createObjectURL(file);
+      videoPreview.src = url;
+      videoPreview.style.display = 'block';
+      videoPreview.play().catch(()=>{});
+    }
+  });
+
+  audioInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(file){
+      const url = URL.createObjectURL(file);
+      audioPreview.src = url;
+      audioPreview.style.display = 'block';
+    }
+  });
+
+  updatePreview();
+  refreshSummary();
+</script>
 {% endblock %}

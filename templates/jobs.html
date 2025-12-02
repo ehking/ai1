@@ -9,12 +9,13 @@
       <span class="muted" style="font-size:12px;">{{ p.description or '—' }}</span>
     </h3>
     <table style="margin-bottom:14px;">
-      <thead><tr><th>جاب</th><th>وضعیت</th><th>پیشرفت</th><th>مسیرها</th><th>کانفیگ</th><th>زمان</th></tr></thead>
+      <thead><tr><th>جاب</th><th>نوع</th><th>وضعیت</th><th>پیشرفت</th><th>مسیرها</th><th>کانفیگ</th><th>زمان</th></tr></thead>
       <tbody>
       {% for j in jobs %}
         <tr>
           <td><a href="{{ url_for('jobs_detail', job_id=j.id) }}">{{ j.title or ('Job #' ~ j.id) }}</a><br>
               <span class="muted">{{ j.tags }}</span></td>
+          <td><span class="badge">{{ j.job_type or 'standard' }}</span></td>
           <td><span class="badge {{ j.status }}">{{ j.status }}</span></td>
           <td>{{ j.progress }}%</td>
           <td class="muted">صدا: {{ j.audio_path }}<br>ویدیو: {{ j.video_path }}</td>
