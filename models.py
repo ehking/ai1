@@ -22,6 +22,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "app.db")
 # NOTE: For SQLite, add/remove columns by deleting app.db once to recreate tables or
 # write a migration script; keep backups of your media/output paths if you do that.
+# After refactors (like moving audio/video paths off Project), drop the old app.db
+# or migrate manually so the new schema takes effect.
 
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
@@ -38,9 +40,7 @@ class Project(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, unique=True)
-    audio_path = Column(Text, nullable=False)
-    video_path = Column(Text, nullable=False)
-    music_type = Column(String(16), default="iranian")  # iranian | foreign
+    description = Column(Text, nullable=True, default="")
     created_at = Column(DateTime, default=datetime.datetime.now)
 
     jobs = relationship("Job", back_populates="project", cascade="all, delete-orphan")

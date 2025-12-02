@@ -29,6 +29,9 @@
   <p><strong>پروژه:</strong> <a href="{{ url_for('project_detail', project_id=job.project_id) }}">{{ job.project.name }}</a></p>
   <p><strong>عنوان جاب:</strong> {{ job.title or ('Job #' ~ job.id) }}</p>
   <p><strong>تگ‌ها:</strong> <span class="muted">{{ job.tags }}</span></p>
+  <p><strong>مسیر صوت:</strong> <span class="muted">{{ job.audio_path }}</span></p>
+  <p><strong>مسیر ویدیو:</strong> <span class="muted">{{ job.video_path }}</span></p>
+  <p><strong>کانفیگ:</strong> <span class="muted">{% if job.config %}{{ job.config.name }}{% if job.config.music_type == 'iranian' %} · ایرانی{% elif job.config.music_type == 'foreign' %} · خارجی{% else %} · عمومی{% endif %}{% else %}پیش‌فرض{% endif %}</span></p>
   <p><strong>وضعیت:</strong> <span id="status-badge" class="badge {{ job.status }}">{{ job.status }}</span></p>
   <div class="progress-bar-container">
     <div id="progress-fill" class="progress-bar-fill" style="width: {{ job.progress }}%;"></div>

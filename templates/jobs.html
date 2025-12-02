@@ -3,27 +3,13 @@
 {% block content %}
 <div class="card">
   <h2>لیست جاب‌ها (گروه‌بندی بر اساس پروژه)</h2>
-  <form method="get" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-    <label style="margin:0;font-size:12px;">فیلتر پروژه‌ها:</label>
-    <select name="type" onchange="this.form.submit()" style="max-width:180px;">
-      <option value="" {% if not filter_type %}selected{% endif %}>همه پروژه‌ها</option>
-      <option value="iranian" {% if filter_type == 'iranian' %}selected{% endif %}>فقط ایرانی</option>
-      <option value="foreign" {% if filter_type == 'foreign' %}selected{% endif %}>فقط خارجی</option>
-    </select>
-  </form>
   {% if proj_jobs %}
     {% for p, jobs in proj_jobs %}
     <h3 style="margin-top:12px;">پروژه: <a href="{{ url_for('project_detail', project_id=p.id) }}">{{ p.name }}</a>
-      {% if p.music_type == 'foreign' %}
-      <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;">خارجی</span>
-      {% elif p.music_type == 'iranian' %}
-      <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;">ایرانی</span>
-      {% else %}
-      <span class="badge" style="background:rgba(148,163,184,0.18);color:#e5e7eb;">عمومی</span>
-      {% endif %}
+      <span class="muted" style="font-size:12px;">{{ p.description or '—' }}</span>
     </h3>
     <table style="margin-bottom:14px;">
-      <thead><tr><th>جاب</th><th>وضعیت</th><th>پیشرفت</th><th>زمان</th></tr></thead>
+      <thead><tr><th>جاب</th><th>وضعیت</th><th>پیشرفت</th><th>مسیرها</th><th>کانفیگ</th><th>زمان</th></tr></thead>
       <tbody>
       {% for j in jobs %}
         <tr>
@@ -31,6 +17,8 @@
               <span class="muted">{{ j.tags }}</span></td>
           <td><span class="badge {{ j.status }}">{{ j.status }}</span></td>
           <td>{{ j.progress }}%</td>
+          <td class="muted">صدا: {{ j.audio_path }}<br>ویدیو: {{ j.video_path }}</td>
+          <td class="muted">{% if j.config %}{{ j.config.name }}{% if j.config.music_type == 'iranian' %} · ایرانی{% elif j.config.music_type == 'foreign' %} · خارجی{% else %} · عمومی{% endif %}{% else %}پیش‌فرض{% endif %}</td>
           <td class="muted">{{ j.created_at }}</td>
         </tr>
       {% endfor %}
