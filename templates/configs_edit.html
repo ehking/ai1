@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}ویرایش کانفیگ{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>ویرایش کانفیگ: {{ cfg.name }}</h2>
+  <form method="post">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <div><label>نام</label><input type="text" name="name" value="{{ cfg.name }}"></div>
+      <div><label>رنگ اصلی متن</label><input type="text" name="primary_color" value="{{ cfg.primary_color }}"></div>
+      <div><label>رنگ اکسنت</label><input type="text" name="accent_color" value="{{ cfg.accent_color }}"></div>
+      <div><label>پس‌زمینه</label><input type="text" name="bg_color" value="{{ cfg.bg_color }}"></div>
+      <div><label>رنگ قاب</label><input type="text" name="border_color" value="{{ cfg.border_color }}"></div>
+      <div><label>فونت</label><input type="text" name="font_name" value="{{ cfg.font_name }}"></div>
+    </div>
+    <div style="margin-top:8px;">
+      <label>توضیح</label>
+      <input type="text" name="description" value="{{ cfg.description }}">
+    </div>
+    <div style="margin-top:8px;">
+      <label>تنظیمات پیشرفته (JSON)</label>
+      <textarea name="advanced_json" dir="ltr" style="font-family:monospace;font-size:12px;">{{ cfg.advanced_json }}</textarea>
+    </div>
+    <div style="margin-top:10px;text-align:left;">
+      <button type="submit">ذخیره</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}پروژه {{ project.name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>پروژه: {{ project.name }}</h2>
+  <p class="muted">
+    صدا: {{ project.audio_path }}<br>
+    ویدیو: {{ project.video_path }}<br>
+    زمان ایجاد: {{ project.created_at }}
+  </p>
+</div>
+
+<div class="card">
+  <h2>ایجاد جاب جدید برای این پروژه</h2>
+  <form method="post" action="{{ url_for('project_new_job', project_id=project.id) }}">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <div>
+        <label>عنوان جاب</label>
+        <input type="text" name="job_title" placeholder="مثلاً: نسخه تیک‌تاک">
+      </div>
+      <div>
+        <label>تگ‌ها</label>
+        <input type="text" name="job_tags" placeholder="vertical fast neon">
+      </div>
+      <div>
+        <label>کانفیگ ظاهری</label>
+        <select name="config_id">
+          <option value="">پیش‌فرض</option>
+          {% for c in configs %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px;text-align:left;">
+      <button type="submit">ثبت جاب</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>جاب‌های این پروژه</h2>
+  {% if jobs %}
+  <table>
+    <thead><tr><th>جاب</th><th>وضعیت</th><th>پیشرفت</th><th>کانفیگ</th></tr></thead>
+    <tbody>
+      {% for j in jobs %}
+      <tr>
+        <td><a href="{{ url_for('jobs_detail', job_id=j.id) }}">{{ j.title or ('Job #' ~ j.id) }}</a><br>
+            <span class="muted">{{ j.tags }}</span></td>
+        <td><span class="badge {{ j.status }}">{{ j.status }}</span><br><span class="muted">{{ j.message }}</span></td>
+        <td>{{ j.progress }}%</td>
+        <td class="muted">
+          {% if j.config %}
+          {{ j.config.name }}
+          {% else %}پیش‌فرض{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="muted">تابه‌حال جابی برای این پروژه ثبت نشده.</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>مدیاهای خروجی</h2>
+  {% if medias %}
+  <table>
+    <thead><tr><th>نوع</th><th>مسیر</th><th>زمان</th><th></th></tr></thead>
+    <tbody>
+      {% for m in medias %}
+      <tr>
+        <td>{{ m.media_type }}</td>
+        <td class="muted">{{ m.file_path }}</td>
+        <td class="muted">{{ m.created_at }}</td>
+        <td><a href="{{ url_for('media_file', media_id=m.id) }}" class="btn">مشاهده</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="muted">خروجی ویدیو برای این پروژه ثبت نشده.</div>
+  {% endif %}
+</div>
+{% endblock %}

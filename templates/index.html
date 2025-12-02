@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}ساخت موزیک ویدیو فارسی{% endblock %}
+{% block content %}
+
+<div class="card">
+    <h2>ساخت موزیک‌ویدیو از آهنگ + ویدیو</h2>
+    <p style="font-size:13px;color:#9ca3af;margin-top:0;">
+        فایل صوتی (mp3/wav) و ویدیوی خام (mp4/mov) را انتخاب کنید؛
+        سیستم به صورت خودکار متن را استخراج می‌کند، موشن‌گرافی فارسی می‌سازد و روی ویدیو می‌اندازد.
+    </p>
+    <form method="post" enctype="multipart/form-data">
+        <div style="margin-bottom:12px;">
+            <label for="audio">فایل صوتی (آهنگ / ویس)</label>
+            <input type="file" name="audio" id="audio" accept="audio/*" required>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label for="video">فایل ویدیوی خام</label>
+            <input type="file" name="video" id="video" accept="video/*" required>
+        </div>
+        <button type="submit">ایجاد جاب جدید</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>لیست جاب‌ها</h2>
+    {% if jobs %}
+    <table>
+        <thead>
+            <tr>
+                <th>جاب</th>
+                <th>وضعیت</th>
+                <th>پیشرفت</th>
+                <th>خروجی</th>
+                <th>زمان</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in jobs %}
+            <tr>
+                <td><a href="{{ url_for('job_detail', job_id=job.id) }}">{{ job.id }}</a></td>
+                <td>
+                    <span class="badge {{ job.status }}">{{ job.status }}</span>
+                </td>
+                <td>{{ job.progress }}%</td>
+                <td>
+                    {% if job.output_filename and job.status == "done" %}
+                        <a href="{{ url_for('download_output', filename=job.output_filename | replace('outputs/','')) }}">مشاهده</a>
+                    {% elif job.status == "error" %}
+                        خطا
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="font-size:13px;color:#9ca3af;">فعلاً هیچ جابی در سیستم نیست.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

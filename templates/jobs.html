@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}جاب‌ها{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>لیست جاب‌ها (گروه‌بندی بر اساس پروژه)</h2>
+  {% if proj_jobs %}
+    {% for p, jobs in proj_jobs %}
+    <h3 style="margin-top:12px;">پروژه: <a href="{{ url_for('project_detail', project_id=p.id) }}">{{ p.name }}</a></h3>
+    <table style="margin-bottom:14px;">
+      <thead><tr><th>جاب</th><th>وضعیت</th><th>پیشرفت</th><th>زمان</th></tr></thead>
+      <tbody>
+      {% for j in jobs %}
+        <tr>
+          <td><a href="{{ url_for('jobs_detail', job_id=j.id) }}">{{ j.title or ('Job #' ~ j.id) }}</a><br>
+              <span class="muted">{{ j.tags }}</span></td>
+          <td><span class="badge {{ j.status }}">{{ j.status }}</span></td>
+          <td>{{ j.progress }}%</td>
+          <td class="muted">{{ j.created_at }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endfor %}
+  {% else %}
+  <div class="muted">هیچ جابی در سیستم ثبت نشده.</div>
+  {% endif %}
+</div>
+{% endblock %}

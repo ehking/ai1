@@ -1,0 +1,9 @@
+media/
+outputs/
+uploads/
+cache/
+# ویدیوها
+*.mov
+*.mp4
+*.avi
+*.mp3

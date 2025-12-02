@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}کانفیگ‌ها{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>ایجاد کانفیگ جدید</h2>
+  <form method="post">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <div><label>نام</label><input type="text" name="name" placeholder="مثلاً: نئون سبز"></div>
+      <div><label>رنگ اصلی متن</label><input type="text" name="primary_color" value="#F9F5FF"></div>
+      <div><label>رنگ اکسنت</label><input type="text" name="accent_color" value="#ec4899"></div>
+      <div><label>پس‌زمینه</label><input type="text" name="bg_color" value="#020617"></div>
+      <div><label>رنگ قاب</label><input type="text" name="border_color" value="#94a3b8"></div>
+      <div><label>فونت</label><input type="text" name="font_name" value="Yekan"></div>
+    </div>
+    <div style="margin-top:8px;">
+      <label>توضیح</label>
+      <input type="text" name="description" placeholder="توضیح کوتاه">
+    </div>
+    <div style="margin-top:8px;">
+      <label>تنظیمات پیشرفته (JSON)</label>
+      <textarea name="advanced_json" dir="ltr" style="font-family:monospace;font-size:12px;">
+{
+  "text": {
+    "base_scale": 1.4,
+    "rotate_deg": -10,
+    "stroke_width": 4.0,
+    "pulse_rt": 0.09
+  },
+  "video": {
+    "filter_chain": "eq=contrast=1.08:saturation=1.1, vignette"
+  }
+}
+      </textarea>
+    </div>
+    <div style="margin-top:10px;text-align:left;">
+      <button type="submit">ذخیره کانفیگ</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>لیست کانفیگ‌ها</h2>
+  {% if configs %}
+  <table>
+    <thead><tr><th>نام</th><th>توضیح</th><th>رنگ‌ها</th><th>زمان</th><th></th></tr></thead>
+    <tbody>
+      {% for c in configs %}
+      <tr>
+        <td>{{ c.name }}</td>
+        <td class="muted">{{ c.description }}</td>
+        <td class="muted">
+          متن: {{ c.primary_color }} / اکسنت: {{ c.accent_color }}<br>
+          پس‌زمینه: {{ c.bg_color }} / قاب: {{ c.border_color }}
+        </td>
+        <td class="muted">{{ c.created_at }}</td>
+        <td><a href="{{ url_for('configs_edit', config_id=c.id) }}" class="btn">ویرایش</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="muted">کانفیگی ثبت نشده.</div>
+  {% endif %}
+</div>
+{% endblock %}

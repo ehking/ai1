@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}مدیاها{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>فایل‌های خروجی</h2>
+  {% if medias %}
+  <table>
+    <thead><tr><th>پروژه</th><th>نوع</th><th>مسیر</th><th>زمان</th><th></th></tr></thead>
+    <tbody>
+      {% for m in medias %}
+      <tr>
+        <td><a href="{{ url_for('project_detail', project_id=m.project_id) }}">{{ m.project.name }}</a></td>
+        <td>{{ m.media_type }}</td>
+        <td class="muted">{{ m.file_path }}</td>
+        <td class="muted">{{ m.created_at }}</td>
+        <td><a href="{{ url_for('media_file', media_id=m.id) }}" class="btn">مشاهده</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="muted">هنوز خروجی ثبت نشده.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Farsi Motion Studio{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        @font-face {
+            font-family: "YekanWeb";
+            src: url("{{ url_for('static', filename='fonts/Yekan.woff2') }}") format("woff2");
+            font-weight: normal;
+            font-style: normal;
+        }
+        :root {
+            --bg-main-dark: #020617;
+            --bg-card-dark: #0b1220;
+            --border-dark: #1f2937;
+            --text-main-dark: #f9fafb;
+            --text-muted-dark: #9ca3af;
+
+            --bg-main-light: #f3f4f6;
+            --bg-card-light: #ffffff;
+            --border-light: #e5e7eb;
+            --text-main-light: #111827;
+            --text-muted-light: #6b7280;
+        }
+        [data-theme="dark"] {
+            --bg-main: var(--bg-main-dark);
+            --bg-card: var(--bg-card-dark);
+            --border-color: var(--border-dark);
+            --text-main: var(--text-main-dark);
+            --text-muted: var(--text-muted-dark);
+        }
+        [data-theme="light"] {
+            --bg-main: var(--bg-main-light);
+            --bg-card: var(--bg-card-light);
+            --border-color: var(--border-light);
+            --text-main: var(--text-main-light);
+            --text-muted: var(--text-muted-light);
+        }
+        body {
+            font-family: "YekanWeb", "Yekan", "IRANSans", "Vazirmatn", sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+        }
+        a { color: #4f46e5; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: row-reverse;
+        }
+        .sidebar {
+            width: 220px;
+            background: linear-gradient(180deg, #020617, #020617);
+            border-left: 1px solid var(--border-color);
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .brand { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .nav-group-title { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+        .nav-link {
+            display: block;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            margin-bottom: 4px;
+            color: var(--text-main);
+            border: 1px solid transparent;
+            text-align: right;
+        }
+        .nav-link.active {
+            border-color: rgba(148,163,184,0.9);
+            background: rgba(15,23,42,0.95);
+        }
+        .theme-toggle {
+            margin-top: auto;
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .theme-toggle button {
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-main);
+        }
+        .content { flex: 1; padding: 16px 20px; }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 18px 18px 14px 18px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+        .card h2 { margin-top: 0; font-size: 17px; }
+
+        .flash {
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+        .flash.error {
+            background: rgba(220,38,38,0.12);
+            border: 1px solid rgba(248,113,113,0.6);
+        }
+        .flash.success {
+            background: rgba(22,163,74,0.12);
+            border: 1px solid rgba(74,222,128,0.6);
+        }
+
+        label { font-size: 13px; display: block; margin-bottom: 4px; }
+        input[type="text"], input[type="file"], textarea, select {
+            width: 100%;
+            padding: 8px 6px;
+            background: var(--bg-main);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-size: 13px;
+            box-sizing: border-box;
+            direction: rtl;
+            text-align: right;
+        }
+        textarea { min-height: 80px; }
+        button, .btn {
+            border-radius: 999px;
+            border: none;
+            padding: 7px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            color: white;
+            transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.1s.ease;
+            box-shadow: 0 10px 25px rgba(99,102,241,0.35);
+        }
+        button:hover, .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(99,102,241,0.45);
+        }
+        button:disabled { opacity: .5; cursor: default; box-shadow: none; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 12px; direction: rtl; }
+        th, td { padding: 6px 8px; border-bottom: 1px solid var(--border-color); }
+        th { text-align: right; font-weight: 600; color: var(--text-muted); }
+        td { text-align: right; }
+
+        .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; }
+        .badge.queued { background: rgba(59,130,246,0.18); color: #60a5fa; }
+        .badge.running { background: rgba(234,179,8,0.18); color: #facc15; }
+        .badge.done { background: rgba(22,163,74,0.18); color: #4ade80; }
+        .badge.error { background: rgba(220,38,38,0.18); color: #fca5a5; }
+        .badge.cancelled { background: rgba(148,163,184,0.18); color: #e5e7eb; }
+
+        .progress-bar-container {
+            background: var(--bg-main);
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            height: 8px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #a855f7);
+            width: 0%;
+            transition: width 0.25s ease-out;
+        }
+        .progress-text { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        .muted { font-size: 12px; color: var(--text-muted); }
+        footer { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 16px; }
+    </style>
+    {% block extra_head %}{% endblock %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const root = document.documentElement;
+            const saved = localStorage.getItem("fm_theme");
+            if (saved === "light" || saved === "dark") {
+                root.setAttribute("data-theme", saved);
+            }
+            const btn = document.getElementById("theme-toggle-btn");
+            if (btn) {
+                btn.addEventListener("click", function () {
+                    const current = root.getAttribute("data-theme") || "dark";
+                    const next = current === "dark" ? "light" : "dark";
+                    root.setAttribute("data-theme", next);
+                    localStorage.setItem("fm_theme", next);
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+<div class="layout">
+    <div class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for cat, msg in messages %}
+              <div class="flash {{ cat }}">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+        <footer>
+            ساخته شده با Flask + Manim · کاملاً قابل توسعه.
+        </footer>
+    </div>
+    <aside class="sidebar">
+        <div>
+            <div class="brand">🎬 Farsi Motion</div>
+            <div class="nav-group-title">بخش‌ها</div>
+            <a href="{{ url_for('projects_list') }}" class="nav-link {% if request.path.startswith('/projects') %}active{% endif %}">پروژه‌ها</a>
+            <a href="{{ url_for('jobs_list') }}" class="nav-link {% if request.path.startswith('/jobs') %}active{% endif %}">جاب‌ها</a>
+            <a href="{{ url_for('media_list') }}" class="nav-link {% if request.path.startswith('/media') %}active{% endif %}">مدیاها</a>
+            <div class="nav-group-title" style="margin-top:12px;">تنظیمات</div>
+            <a href="{{ url_for('configs_list') }}" class="nav-link {% if request.path.startswith('/configs') %}active{% endif %}">کانفیگ‌ها</a>
+        </div>
+        <div class="theme-toggle">
+            <span>حالت تیره/روشن</span>
+            <button id="theme-toggle-btn">تغییر تم</button>
+        </div>
+    </aside>
+</div>
+</body>
+</html>

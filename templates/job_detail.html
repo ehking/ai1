@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}وضعیت جاب{% endblock %}
+{% block extra_head %}
+<script>
+  function pollStatus() {
+    const url = "{{ url_for('jobs_status_json', job_id=job.id) }}";
+    fetch(url).then(r => r.json()).then(data => {
+      if (data.error) return;
+      const p = document.getElementById("progress-fill");
+      const t = document.getElementById("progress-text");
+      if (p) p.style.width = (data.progress || 0) + "%";
+      if (t) t.innerText = (data.progress || 0) + "% - " + (data.message || "");
+      const badge = document.getElementById("status-badge");
+      if (badge) {
+        badge.className = "badge " + (data.status || "");
+        badge.innerText = data.status;
+      }
+      if (data.status === "queued" || data.status === "running") {
+        setTimeout(pollStatus, 2000);
+      }
+    }).catch(e => {});
+  }
+  document.addEventListener("DOMContentLoaded", pollStatus);
+</script>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>وضعیت جاب</h2>
+  <p><strong>پروژه:</strong> <a href="{{ url_for('project_detail', project_id=job.project_id) }}">{{ job.project.name }}</a></p>
+  <p><strong>عنوان جاب:</strong> {{ job.title or ('Job #' ~ job.id) }}</p>
+  <p><strong>تگ‌ها:</strong> <span class="muted">{{ job.tags }}</span></p>
+  <p><strong>وضعیت:</strong> <span id="status-badge" class="badge {{ job.status }}">{{ job.status }}</span></p>
+  <div class="progress-bar-container">
+    <div id="progress-fill" class="progress-bar-fill" style="width: {{ job.progress }}%;"></div>
+  </div>
+  <div id="progress-text" class="progress-text">{{ job.progress }}% - {{ job.message }}</div>
+
+  <div style="margin-top:12px;">
+    <form method="post" action="{{ url_for('jobs_cancel', job_id=job.id) }}" style="display:inline;">
+      <button type="submit"
+              {% if job.status not in ['queued', 'running'] %}disabled{% endif %}>
+        لغو جاب
+      </button>
+    </form>
+    <form method="post" action="{{ url_for('jobs_requeue', job_id=job.id) }}" style="display:inline;margin-right:8px;">
+      <button type="submit"
+              {% if job.status not in ['done', 'error', 'cancelled'] %}disabled{% endif %}>
+        اجرای دوباره
+      </button>
+    </form>
+  </div>
+
+  {% if job.error %}
+  <p class="flash error" style="margin-top:12px;">{{ job.error }}</p>
+  {% endif %}
+</div>
+{% endblock %}

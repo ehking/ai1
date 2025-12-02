@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}پروژه‌ها{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>ایجاد پروژه جدید</h2>
+  <form method="post" enctype="multipart/form-data">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+      <div>
+        <label>نام پروژه</label>
+        <input type="text" name="name" placeholder="مثلاً: کلیپ رهام کن">
+      </div>
+      <div>
+        <label>کانفیگ ظاهری</label>
+        <select name="config_id">
+          <option value="">پیش‌فرض</option>
+          {% for c in configs %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>عنوان جاب اولیه</label>
+        <input type="text" name="job_title" placeholder="مثلاً: نسخه اینستاگرام">
+      </div>
+      <div>
+        <label>تگ‌های جاب</label>
+        <input type="text" name="job_tags" placeholder="vertical, dark, neon">
+      </div>
+      <div>
+        <label>فایل صوتی (آهنگ)</label>
+        <input type="file" name="audio" accept="audio/*">
+      </div>
+      <div>
+        <label>ویدیو زمینه</label>
+        <input type="file" name="video" accept="video/*">
+      </div>
+    </div>
+    <div style="margin-top:12px;text-align:left;">
+      <button type="submit">ساخت پروژه و جاب</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>لیست پروژه‌ها</h2>
+  {% if projects %}
+  <table>
+    <thead><tr><th>پروژه</th><th>فایل‌ها</th><th>زمان</th></tr></thead>
+    <tbody>
+      {% for p in projects %}
+      <tr>
+        <td><a href="{{ url_for('project_detail', project_id=p.id) }}">{{ p.name }}</a></td>
+        <td class="muted">
+          صدا: {{ p.audio_path }}<br>
+          ویدیو: {{ p.video_path }}
+        </td>
+        <td class="muted">{{ p.created_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="muted">هنوز پروژه‌ای ثبت نشده.</div>
+  {% endif %}
+</div>
+{% endblock %}
