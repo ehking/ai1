@@ -2,7 +2,7 @@
 {% block title %}پروژه‌ها{% endblock %}
 {% block content %}
 <div class="card">
-  <h2>ایجاد پروژه جدید</h2>
+  <h2 id="new">ایجاد پروژه جدید</h2>
   <form method="post" enctype="multipart/form-data">
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
       <div>
@@ -10,11 +10,20 @@
         <input type="text" name="name" placeholder="مثلاً: کلیپ رهام کن">
       </div>
       <div>
+        <label>نوع موسیقی</label>
+        <select name="music_type">
+          <option value="iranian" {% if create_music_type == 'iranian' %}selected{% endif %}>ایرانی</option>
+          <option value="foreign" {% if create_music_type == 'foreign' %}selected{% endif %}>خارجی</option>
+        </select>
+      </div>
+      <div>
         <label>کانفیگ ظاهری</label>
         <select name="config_id">
           <option value="">پیش‌فرض</option>
           {% for c in configs %}
-          <option value="{{ c.id }}">{{ c.name }}</option>
+          {% if not create_music_type or c.music_type is none or c.music_type == create_music_type %}
+          <option value="{{ c.id }}">{{ c.name }}{% if c.music_type == 'iranian' %} · ایرانی{% elif c.music_type == 'foreign' %} · خارجی{% endif %}</option>
+          {% endif %}
           {% endfor %}
         </select>
       </div>
@@ -45,11 +54,20 @@
   <h2>لیست پروژه‌ها</h2>
   {% if projects %}
   <table>
-    <thead><tr><th>پروژه</th><th>فایل‌ها</th><th>زمان</th></tr></thead>
+    <thead><tr><th>پروژه</th><th>نوع</th><th>فایل‌ها</th><th>زمان</th></tr></thead>
     <tbody>
       {% for p in projects %}
       <tr>
         <td><a href="{{ url_for('project_detail', project_id=p.id) }}">{{ p.name }}</a></td>
+        <td>
+          {% if p.music_type == 'foreign' %}
+          <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;">خارجی</span>
+          {% elif p.music_type == 'iranian' %}
+          <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;">ایرانی</span>
+          {% else %}
+          <span class="badge" style="background:rgba(148,163,184,0.18);color:#e5e7eb;">عمومی</span>
+          {% endif %}
+        </td>
         <td class="muted">
           صدا: {{ p.audio_path }}<br>
           ویدیو: {{ p.video_path }}

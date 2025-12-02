@@ -42,6 +42,11 @@ def process_job(
 
     update(40, "آماده‌سازی کانفیگ بصری برای Manim...")
     config = config or {}
+    if not isinstance(config, dict):
+        config = {}
+    text_cfg = config.get("text") or {}
+    video_cfg = config.get("video") or {}
+    config = {**config, "text": text_cfg, "video": video_cfg}
     meta = {
         "audio_path": audio_path,
         "video_path": video_path,

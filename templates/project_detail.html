@@ -4,6 +4,14 @@
 <div class="card">
   <h2>پروژه: {{ project.name }}</h2>
   <p class="muted">
+    {% if project.music_type == 'foreign' %}
+    <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;">خارجی</span>
+    {% elif project.music_type == 'iranian' %}
+    <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;">ایرانی</span>
+    {% else %}
+    <span class="badge" style="background:rgba(148,163,184,0.18);color:#e5e7eb;">عمومی</span>
+    {% endif %}
+    <br>
     صدا: {{ project.audio_path }}<br>
     ویدیو: {{ project.video_path }}<br>
     زمان ایجاد: {{ project.created_at }}
@@ -26,8 +34,8 @@
         <label>کانفیگ ظاهری</label>
         <select name="config_id">
           <option value="">پیش‌فرض</option>
-          {% for c in configs %}
-          <option value="{{ c.id }}">{{ c.name }}</option>
+          {% for c in filtered_configs %}
+          <option value="{{ c.id }}">{{ c.name }}{% if c.music_type == 'iranian' %} · ایرانی{% elif c.music_type == 'foreign' %} · خارجی{% endif %}</option>
           {% endfor %}
         </select>
       </div>

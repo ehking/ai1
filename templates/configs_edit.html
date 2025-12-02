@@ -11,14 +11,25 @@
       <div><label>پس‌زمینه</label><input type="text" name="bg_color" value="{{ cfg.bg_color }}"></div>
       <div><label>رنگ قاب</label><input type="text" name="border_color" value="{{ cfg.border_color }}"></div>
       <div><label>فونت</label><input type="text" name="font_name" value="{{ cfg.font_name }}"></div>
+      <div><label>نوع موسیقی</label>
+        <select name="music_type">
+          <option value="" {% if not cfg.music_type %}selected{% endif %}>عمومی</option>
+          <option value="iranian" {% if cfg.music_type == 'iranian' %}selected{% endif %}>ایرانی</option>
+          <option value="foreign" {% if cfg.music_type == 'foreign' %}selected{% endif %}>خارجی</option>
+        </select>
+      </div>
     </div>
     <div style="margin-top:8px;">
       <label>توضیح</label>
       <input type="text" name="description" value="{{ cfg.description }}">
     </div>
     <div style="margin-top:8px;">
-      <label>تنظیمات پیشرفته (JSON)</label>
-      <textarea name="advanced_json" dir="ltr" style="font-family:monospace;font-size:12px;">{{ cfg.advanced_json }}</textarea>
+      <label>تنظیمات متن (JSON)</label>
+      <textarea name="advanced_json_text" dir="ltr" style="font-family:monospace;font-size:12px;">{{ text_raw }}</textarea>
+    </div>
+    <div style="margin-top:8px;">
+      <label>تنظیمات ویدیو (JSON)</label>
+      <textarea name="advanced_json_video" dir="ltr" style="font-family:monospace;font-size:12px;">{{ video_raw }}</textarea>
     </div>
     <div style="margin-top:10px;text-align:left;">
       <button type="submit">ذخیره</button>
