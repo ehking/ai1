@@ -431,23 +431,29 @@ def jobs_new():
     db: Session = get_session()
     try:
         configs = db.query(Config).order_by(Config.created_at.desc()).all()
+        projects = db.query(Project).order_by(Project.created_at.desc()).all()
         if request.method == "POST":
-            project_name = (request.form.get("project_name") or "").strip()
-            if not project_name:
-                flash("نام پروژه را وارد کنید.", "error")
-                return redirect(url_for("jobs_new"))
-
+            project_id_val = request.form.get("project_id")
+            project_name_new = (request.form.get("project_name_new") or "").strip()
             job_title = request.form.get("job_title") or "Job"
             job_tags = request.form.get("job_tags") or ""
             config_id_val = request.form.get("config_id")
             config_id = int(config_id_val) if config_id_val else None
-
-            job_type = (request.form.get("job_type") or "standard").strip() or "standard"
             overlay_text = request.form.get("overlay_text") or ""
             text_color = request.form.get("text_color") or "#ffffff"
             accent_color = request.form.get("accent_color") or "#ec4899"
             text_size = request.form.get("text_size") or "32"
-            preview_note = request.form.get("preview_note") or ""
+            note_text = request.form.get("note_text") or ""
+            light_effect = request.form.get("light_effect") or "none"
+            video_effect = request.form.get("video_effect") or "clean"
+            note_position_x = request.form.get("note_position_x") or "0"
+            note_position_y = request.form.get("note_position_y") or "0"
+            splits_payload_raw = request.form.get("splits_payload") or "[]"
+
+            try:
+                splits_payload = json.loads(splits_payload_raw)
+            except json.JSONDecodeError:
+                splits_payload = []
 
             job_audio = request.files.get("job_audio")
             job_video = request.files.get("job_video")
@@ -458,11 +464,19 @@ def jobs_new():
                 flash("فایل ویدیویی را انتخاب کنید.", "error")
                 return redirect(url_for("jobs_new"))
 
-            project = db.query(Project).filter(Project.name == project_name).first()
+            project = None
             new_project = False
-            if not project:
+            if project_id_val:
+                project = db.get(Project, int(project_id_val))
+                if not project:
+                    flash("پروژه انتخاب‌شده پیدا نشد.", "error")
+                    return redirect(url_for("jobs_new"))
+            else:
+                if not project_name_new:
+                    flash("یک پروژه انتخاب کنید یا نام جدید وارد کنید.", "error")
+                    return redirect(url_for("jobs_new"))
                 project = Project(
-                    name=project_name,
+                    name=project_name_new,
                     description="",
                     created_at=datetime.datetime.now(),
                 )
@@ -481,7 +495,14 @@ def jobs_new():
                 "text_color": text_color,
                 "accent_color": accent_color,
                 "text_size": text_size,
-                "preview_note": preview_note,
+                "note_text": note_text,
+                "note_position": {
+                    "x": float(note_position_x),
+                    "y": float(note_position_y),
+                },
+                "light_effect": light_effect,
+                "video_effect": video_effect,
+                "splits": splits_payload,
                 "config_id": config_id,
             }, ensure_ascii=False)
 
@@ -492,7 +513,7 @@ def jobs_new():
                 title=job_title,
                 tags=job_tags,
                 config_id=config_id,
-                job_type=job_type,
+                job_type="standard",
                 wizard_data=wizard_payload,
             )
 
@@ -502,7 +523,7 @@ def jobs_new():
                 flash(f"جاب #{job_id} برای پروژه '{project.name}' ساخته شد.", "success")
             return redirect(url_for("jobs_detail", job_id=job_id))
 
-        return render_template("jobs_new.html", configs=configs)
+        return render_template("jobs_new.html", configs=configs, projects=projects)
     finally:
         db.close()
 
