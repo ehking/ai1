@@ -9,12 +9,24 @@
   .wizard-grid {display:grid;grid-template-columns:2fr 1.2fr;gap:16px;align-items:start;}
   .wizard-step {display:none;gap:12px;}
   .wizard-step.active {display:grid;}
-  .preview-shell {background:#0f172a;border:1px solid var(--border-color);border-radius:14px;padding:10px;position:sticky;top:16px;box-shadow:0 10px 30px rgba(0,0,0,0.25);} 
-  .live-preview {position:relative;border-radius:12px;overflow:hidden;background:#111827;border:1px dashed var(--border-color);min-height:260px;}
-  .live-preview video {width:100%;height:100%;object-fit:cover;display:block;}
-  .overlay-text {position:absolute;bottom:16px;right:16px;background:rgba(0,0,0,0.35);padding:8px 12px;border-radius:12px;font-weight:700;backdrop-filter:blur(8px);max-width:80%;}
+  .preview-shell {background:#0f172a;border:1px solid var(--border-color);border-radius:14px;padding:10px;position:sticky;top:16px;box-shadow:0 10px 30px rgba(0,0,0,0.25);}
+  .live-preview {position:relative;border-radius:12px;overflow:hidden;background:#0b1222;border:1px dashed var(--border-color);min-height:280px;transition:box-shadow .3s, filter .3s;}
+  .live-preview video {width:100%;height:100%;object-fit:cover;display:block;filter:var(--video-filter,none);}
+  .overlay-text {position:absolute;bottom:16px;right:16px;background:rgba(0,0,0,0.35);padding:8px 12px;border-radius:12px;font-weight:700;backdrop-filter:blur(8px);max-width:80%;line-height:1.4;transition:all .2s ease;}
+  .note-tag {position:absolute;cursor:grab;user-select:none;padding:6px 10px;border-radius:10px;background:rgba(148,163,184,0.15);border:1px dashed var(--border-color);color:#cbd5e1;top:40%;left:40%;backdrop-filter:blur(6px);max-width:65%;}
+  .note-tag:active {cursor:grabbing;}
   .wizard-actions {display:flex;justify-content:space-between;align-items:center;margin-top:14px;}
   .summary-box {background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:12px;padding:10px;font-size:12px;}
+  .split-card {border:1px solid var(--border-color);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.01);}
+  .split-card.active {border-color:#6366f1;box-shadow:0 6px 20px rgba(99,102,241,0.2);}
+  .split-card h4 {margin:0;font-size:14px;display:flex;justify-content:space-between;align-items:center;}
+  .split-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  .effect-badge {display:inline-flex;align-items:center;gap:6px;padding:6px 8px;border-radius:12px;border:1px dashed var(--border-color);font-size:12px;}
+  .fx-preview {display:flex;gap:10px;flex-wrap:wrap;}
+  .wizard-step .section {background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:10px;padding:10px;}
+  .live-preview.fx-glow {box-shadow:0 0 0 2px rgba(99,102,241,0.35),0 12px 45px rgba(99,102,241,0.3);}
+  .live-preview.fx-beam::after {content:"";position:absolute;inset:0;background:linear-gradient(125deg,rgba(236,72,153,0.14),rgba(99,102,241,0.08));mix-blend-mode:screen;pointer-events:none;}
+  .live-preview.fx-spotlight::after {content:"";position:absolute;width:220px;height:220px;filter:blur(80px);background:radial-gradient(circle,rgba(244,114,182,0.35),transparent 70%);top:10%;left:20%;mix-blend-mode:screen;pointer-events:none;}
   @media(max-width:960px){.wizard-grid{grid-template-columns:1fr;}.preview-shell{position:relative;}}
 </style>
 {% endblock %}
@@ -23,39 +35,38 @@
   <div class="wizard-header">
     <div>
       <h2 style="margin:0;">ویزارد ایجاد جاب جدید</h2>
-      <div class="muted">پیش از رندر، همه‌چیز را ببین، ویرایش کن و بعد تایید کن.</div>
+      <div class="muted">ابتدا رندر پایه را شروع کن، بعد اسپلادها را ویرایش و در پایان همه‌چیز را به هم بچسبان.</div>
     </div>
     <div class="step-dots" id="step-dots"></div>
   </div>
 
   <form id="wizard-form" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="splits_payload" id="splits-payload">
+    <input type="hidden" name="note_position_x" id="note-pos-x">
+    <input type="hidden" name="note_position_y" id="note-pos-y">
     <div class="wizard-grid">
       <div>
         <div class="wizard-step active" data-step="1" style="grid-template-columns:repeat(2,minmax(0,1fr));">
-          <div>
-            <label>نام پروژه</label>
-            <input type="text" name="project_name" placeholder="مثلاً: پروژه کلیپ جدید" required>
-            <p class="muted" style="margin-top:4px;">اگر پروژه‌ای با این نام وجود نداشته باشد، ساخته می‌شود.</p>
+          <div class="section">
+            <label>پروژه</label>
+            <select name="project_id" id="project-select">
+              <option value="">پروژه جدید بساز...</option>
+              {% for p in projects %}
+              <option value="{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
+            <div style="margin-top:8px;">
+              <label>نام پروژه جدید (اختیاری)</label>
+              <input type="text" name="project_name_new" id="project-name-new" placeholder="مثلاً: پروژه کلیپ جدید">
+              <p class="muted" style="margin-top:4px;">در صورت انتخاب پروژه موجود، این فیلد نادیده گرفته می‌شود.</p>
+            </div>
           </div>
-          <div>
+          <div class="section">
             <label>عنوان جاب</label>
             <input type="text" name="job_title" placeholder="مثلاً: نسخه اینستاگرام">
-          </div>
-          <div>
-            <label>تگ‌ها</label>
+            <label style="margin-top:10px;">تگ‌ها</label>
             <input type="text" name="job_tags" placeholder="vertical fast neon">
-          </div>
-          <div>
-            <label>نوع جاب</label>
-            <select name="job_type">
-              <option value="standard">نسخه کامل (پیش‌فرض)</option>
-              <option value="fast-preview">پیش‌نمایش سریع</option>
-              <option value="story">استوری عمودی</option>
-              <option value="snippet">بریده کوتاه</option>
-            </select>
-          </div>
-          <div>
-            <label>کانفیگ ظاهری</label>
+            <label style="margin-top:10px;">کانفیگ ظاهری</label>
             <select name="config_id">
               <option value="">پیش‌فرض</option>
               {% for c in configs %}
@@ -63,35 +74,74 @@
               {% endfor %}
             </select>
           </div>
-        </div>
-
-        <div class="wizard-step" data-step="2" style="grid-template-columns:repeat(2,minmax(0,1fr));">
-          <div>
+          <div class="section">
             <label>فایل صوتی</label>
             <input type="file" name="job_audio" id="job-audio" accept="audio/*" required>
             <audio id="audio-preview" controls style="width:100%;margin-top:10px;display:none;"></audio>
           </div>
-          <div>
+          <div class="section">
             <label>فایل ویدیویی</label>
             <input type="file" name="job_video" id="job-video" accept="video/*" required>
-            <div class="muted" style="margin-top:6px;">پیش‌نمایش ویدیوی خام در سمت راست قابل مشاهده است.</div>
+            <div class="muted" style="margin-top:6px;">بعد از انتخاب فایل‌ها روی «اجرای رندر پایه» بزن تا پیش‌نمایش شروع شود.</div>
+            <button type="button" id="kickoff-render" style="margin-top:8px;">اجرای رندر پایه</button>
+          </div>
+        </div>
+
+        <div class="wizard-step" data-step="2" style="grid-template-columns:1fr;">
+          <div class="section">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div>
+                <label>تعداد اسپلاد</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="number" id="split-count" value="3" min="1" max="12" style="width:110px;">
+                  <button type="button" id="generate-splits">بساز / به‌روزرسانی</button>
+                </div>
+              </div>
+              <div class="effect-badge">اول رندر، بعد ویرایش متن هر اسپلاد و در انتها ادغام</div>
+            </div>
+            <div class="muted" style="margin-top:6px;">برای هر اسپلاد متن، فونت و ظاهر مخصوص ثبت کن و برای پیش‌نمایش انتخابش کن.</div>
+            <div class="split-grid" id="split-list" style="margin-top:10px;"></div>
           </div>
         </div>
 
         <div class="wizard-step" data-step="3" style="grid-template-columns:repeat(2,minmax(0,1fr));">
-          <div>
+          <div class="section">
             <label>متن روی تصویر</label>
             <textarea name="overlay_text" id="overlay-text" placeholder="متن را اینجا بنویس...">سلام! این یک پیش‌نمایش آنی است.</textarea>
             <label style="margin-top:10px;">رنگ متن</label>
             <input type="color" name="text_color" id="text-color" value="#ffffff">
-          </div>
-          <div>
-            <label>رنگ هایلایت</label>
-            <input type="color" name="accent_color" id="accent-color" value="#ec4899">
             <label style="margin-top:10px;">سایز متن (px)</label>
             <input type="number" name="text_size" id="text-size" value="32" min="10" max="120">
-            <label style="margin-top:10px;">یادداشت برای پیش‌نمایش</label>
-            <input type="text" name="preview_note" id="preview-note" placeholder="مثلاً: متن بالای تصویر ۲۰٪ فضای امن">
+            <label style="margin-top:10px;">رنگ هایلایت</label>
+            <input type="color" name="accent_color" id="accent-color" value="#ec4899">
+          </div>
+          <div class="section">
+            <label>یادداشت پیش‌نمایش (درگ کنید)</label>
+            <input type="text" name="note_text" id="note-text" placeholder="مثلاً: متن بالای تصویر ۲۰٪ فضای امن">
+            <div class="muted" style="margin:6px 0;">یادداشت را در پیش‌نمایش جابجا کن تا جای دقیقش ذخیره شود.</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <button type="button" id="reset-note">بازنشانی موقعیت</button>
+              <span class="effect-badge">موقعیت و متن در ویزارد ذخیره می‌شود.</span>
+            </div>
+            <hr style="border:none;border-top:1px dashed var(--border-color);margin:10px 0;">
+            <label>افکت نوری</label>
+            <select name="light_effect" id="light-effect">
+              <option value="none">خاموش</option>
+              <option value="glow">هاله و درخشش</option>
+              <option value="beam">پرتو مورب</option>
+              <option value="spotlight">نور نقطه‌ای</option>
+            </select>
+            <label style="margin-top:10px;">افکت ویدیویی</label>
+            <select name="video_effect" id="video-effect">
+              <option value="clean">بدون افکت</option>
+              <option value="vignette">ویگنت نرم</option>
+              <option value="cinematic">کنتراست سینمایی</option>
+              <option value="pulse">پالس ریتمیک</option>
+            </select>
+            <div class="fx-preview" style="margin-top:10px;">
+              <div class="effect-badge">نورها بعد از رندر پایه اعمال می‌شوند.</div>
+              <div class="effect-badge">ویدیو بدون رندر کامل بروزرسانی می‌شود.</div>
+            </div>
           </div>
         </div>
 
@@ -99,7 +149,7 @@
           <div class="summary-box" id="summary-box">
             اطلاعات نهایی پس از تغییرات شما اینجا نمایش داده می‌شود.
           </div>
-          <div class="muted">بعد از تایید، جاب در صف رندر قرار می‌گیرد و می‌توانید وضعیت را در صفحه جاب ببینید.</div>
+          <div class="muted">بعد از تایید، رندر پایه اجرا شده و اسپلادها با ویرایش شما به هم می‌چسبند.</div>
         </div>
 
         <div class="wizard-actions">
@@ -119,8 +169,9 @@
         <div class="live-preview" id="live-preview">
           <video id="video-preview" controls muted loop style="display:none;"></video>
           <div class="overlay-text" id="overlay-preview">سلام! این یک پیش‌نمایش آنی است.</div>
+          <div class="note-tag" id="note-preview" style="display:none;">یادداشت پیش‌نمایش</div>
         </div>
-        <div class="muted" style="margin-top:8px;font-size:12px;">رنگ، سایز و متن را از چپ تنظیم کنید و نتیجه را زنده ببینید.</div>
+        <div class="muted" style="margin-top:8px;font-size:12px;">رندر پایه را بزن، متن هر اسپلاد و افکت‌ها را تغییر بده و نتیجه را زنده ببین.</div>
       </div>
     </div>
   </form>
@@ -163,13 +214,35 @@
   const textColorInput = document.getElementById('text-color');
   const accentColorInput = document.getElementById('accent-color');
   const textSizeInput = document.getElementById('text-size');
-  const previewNoteInput = document.getElementById('preview-note');
+  const noteInput = document.getElementById('note-text');
   const videoInput = document.getElementById('job-video');
   const audioInput = document.getElementById('job-audio');
   const videoPreview = document.getElementById('video-preview');
   const audioPreview = document.getElementById('audio-preview');
   const livePreview = document.getElementById('live-preview');
   const summaryBox = document.getElementById('summary-box');
+  const splitList = document.getElementById('split-list');
+  const splitCount = document.getElementById('split-count');
+  const splitGenerator = document.getElementById('generate-splits');
+  const splitsPayloadInput = document.getElementById('splits-payload');
+  const projectSelect = document.getElementById('project-select');
+  const projectNameNew = document.getElementById('project-name-new');
+  const notePreview = document.getElementById('note-preview');
+  const notePosXInput = document.getElementById('note-pos-x');
+  const notePosYInput = document.getElementById('note-pos-y');
+  const resetNoteBtn = document.getElementById('reset-note');
+  const lightEffectInput = document.getElementById('light-effect');
+  const videoEffectInput = document.getElementById('video-effect');
+  const kickoffBtn = document.getElementById('kickoff-render');
+  const formEl = document.getElementById('wizard-form');
+
+  let splits = [];
+  let activeSplitId = null;
+  let notePosition = {x: 0.4, y: 0.4};
+  let draggingNote = false;
+  let dragOffset = {x:0, y:0};
+
+  const makeId = ()=> (crypto.randomUUID ? crypto.randomUUID() : 'split-' + Math.random().toString(16).slice(2));
 
   function updatePreview(){
     overlayPreview.textContent = overlayInput.value || 'پیش‌نمایش بدون متن';
@@ -177,36 +250,165 @@
     overlayPreview.style.fontSize = (textSizeInput.value || 32) + 'px';
     overlayPreview.style.textShadow = `0 0 18px ${accentColorInput.value || '#ec4899'}`;
     livePreview.style.boxShadow = `0 0 0 2px ${accentColorInput.value || '#ec4899'}`;
+
+    const lightFx = lightEffectInput.value;
+    livePreview.classList.remove('fx-glow','fx-beam','fx-spotlight');
+    if(lightFx !== 'none') livePreview.classList.add(`fx-${lightFx}`);
+
+    const videoFx = videoEffectInput.value;
+    livePreview.style.setProperty('--video-filter', {
+      'vignette': 'contrast(1.05) saturate(1.05) drop-shadow(0 0 12px rgba(0,0,0,0.3))',
+      'cinematic': 'contrast(1.1) saturate(0.95) brightness(0.95)',
+      'pulse': 'contrast(1.1) saturate(1.1)',
+      'clean': 'none',
+    }[videoFx] || 'none');
   }
 
   function refreshSummary(){
-    const project = document.querySelector('input[name="project_name"]').value || '—';
+    const selectedProject = projectSelect.options[projectSelect.selectedIndex]?.text || '—';
+    const newProjectName = (projectNameNew.value || '').trim();
+    const projectLabel = projectSelect.value ? selectedProject : (newProjectName || 'پروژه جدید');
     const title = document.querySelector('input[name="job_title"]').value || 'بدون عنوان';
     const tags = document.querySelector('input[name="job_tags"]').value || '—';
-    const type = document.querySelector('select[name="job_type"]').value || 'standard';
     const overlayTxt = overlayInput.value || '—';
     const tColor = textColorInput.value;
     const tSize = textSizeInput.value || '—';
     const accColor = accentColorInput.value;
-    const note = previewNoteInput.value || '—';
+    const noteVal = noteInput.value || '—';
+    const lightFx = lightEffectInput.options[lightEffectInput.selectedIndex].text;
+    const videoFx = videoEffectInput.options[videoEffectInput.selectedIndex].text;
     summaryBox.innerHTML = `
-      <div><strong>پروژه:</strong> ${project}</div>
+      <div><strong>پروژه:</strong> ${projectLabel}</div>
       <div><strong>عنوان جاب:</strong> ${title}</div>
       <div><strong>تگ‌ها:</strong> ${tags}</div>
-      <div><strong>نوع جاب:</strong> ${type}</div>
-      <div><strong>متن:</strong> ${overlayTxt}</div>
+      <div><strong>متن فعال:</strong> ${overlayTxt}</div>
       <div><strong>رنگ متن:</strong> ${tColor} · <strong>سایز:</strong> ${tSize}px</div>
       <div><strong>رنگ هایلایت:</strong> ${accColor}</div>
-      <div><strong>یادداشت:</strong> ${note}</div>
-      <div class="muted" style="margin-top:6px;">در مرحله آخر تأیید کنید تا جاب وارد صف شود.</div>
+      <div><strong>تعداد اسپلاد:</strong> ${splits.length}</div>
+      <div><strong>یادداشت:</strong> ${noteVal}</div>
+      <div><strong>افکت نوری:</strong> ${lightFx}</div>
+      <div><strong>افکت ویدیویی:</strong> ${videoFx}</div>
+      <div class="muted" style="margin-top:6px;">بعد از تایید، رندر پایه و ادغام اسپلادها انجام می‌شود.</div>
     `;
   }
+
+  function renderSplits(){
+    splitList.innerHTML = '';
+    splits.forEach((s, idx)=>{
+      const card = document.createElement('div');
+      card.className = 'split-card' + (s.id===activeSplitId? ' active':'');
+      card.dataset.id = s.id;
+      card.innerHTML = `
+        <h4>اسپلاد ${idx+1}<button type="button" data-action="activate">پیش‌نمایش</button></h4>
+        <label>متن</label>
+        <input type="text" data-field="text" value="${s.text}">
+        <div class="split-grid">
+          <div>
+            <label>فونت</label>
+            <select data-field="font">
+              <option value="Vazirmatn" ${s.font==='Vazirmatn'?'selected':''}>Vazirmatn</option>
+              <option value="Tahoma" ${s.font==='Tahoma'?'selected':''}>Tahoma</option>
+              <option value="Shabnam" ${s.font==='Shabnam'?'selected':''}>Shabnam</option>
+            </select>
+          </div>
+          <div>
+            <label>وزن</label>
+            <select data-field="weight">
+              <option value="600" ${s.weight==='600'?'selected':''}>بولد</option>
+              <option value="500" ${s.weight==='500'?'selected':''}>متوسط</option>
+              <option value="400" ${s.weight==='400'?'selected':''}>معمولی</option>
+            </select>
+          </div>
+          <div>
+            <label>سایز</label>
+            <input type="number" data-field="size" min="12" max="120" value="${s.size}">
+          </div>
+          <div>
+            <label>رنگ</label>
+            <input type="color" data-field="color" value="${s.color}">
+          </div>
+        </div>
+        <label>تراز</label>
+        <select data-field="align">
+          <option value="right" ${s.align==='right'?'selected':''}>راست</option>
+          <option value="center" ${s.align==='center'?'selected':''}>وسط</option>
+          <option value="left" ${s.align==='left'?'selected':''}>چپ</option>
+        </select>
+      `;
+      card.querySelectorAll('input,select').forEach(el=>{
+        el.addEventListener('input', (e)=>{
+          const field = e.target.dataset.field;
+          if(field) s[field] = e.target.value;
+          syncSplitToPreview(s);
+          refreshSummary();
+        });
+      });
+      card.querySelector('[data-action="activate"]').addEventListener('click', ()=>{
+        activeSplitId = s.id;
+        syncSplitToPreview(s);
+        renderSplits();
+      });
+      splitList.appendChild(card);
+    });
+  }
+
+  function syncSplitToPreview(split){
+    overlayPreview.textContent = split.text || 'بدون متن';
+    overlayPreview.style.fontFamily = split.font;
+    overlayPreview.style.fontWeight = split.weight;
+    overlayPreview.style.fontSize = (split.size || 32) + 'px';
+    overlayPreview.style.color = split.color || '#ffffff';
+    overlayPreview.style.textAlign = split.align;
+    overlayPreview.style.right = split.align === 'right' ? '16px' : 'auto';
+    overlayPreview.style.left = split.align === 'left' ? '16px' : 'auto';
+    overlayPreview.style.margin = '0 auto';
+    if(split.align === 'center'){
+      overlayPreview.style.left = '50%';
+      overlayPreview.style.transform = 'translateX(-50%)';
+    } else {
+      overlayPreview.style.transform = 'none';
+    }
+  }
+
+  function ensureSplits(count){
+    const desired = Math.max(1, Math.min(count, 12));
+    while(splits.length < desired){
+      splits.push({
+        id: makeId(),
+        text: `متن اسپلاد ${splits.length+1}`,
+        font: 'Vazirmatn',
+        weight: '600',
+        size: 32,
+        color: '#ffffff',
+        align: 'center',
+      });
+    }
+    if(splits.length > desired){
+      splits = splits.slice(0, desired);
+    }
+    if(!activeSplitId && splits[0]) activeSplitId = splits[0].id;
+    renderSplits();
+    const active = splits.find(s=>s.id===activeSplitId) || splits[0];
+    if(active) syncSplitToPreview(active);
+    refreshSummary();
+  }
+
+  splitGenerator.addEventListener('click', ()=>{
+    ensureSplits(Number(splitCount.value || 1));
+  });
 
   overlayInput.addEventListener('input', ()=>{updatePreview(); refreshSummary();});
   textColorInput.addEventListener('input', ()=>{updatePreview(); refreshSummary();});
   accentColorInput.addEventListener('input', ()=>{updatePreview(); refreshSummary();});
   textSizeInput.addEventListener('input', ()=>{updatePreview(); refreshSummary();});
-  previewNoteInput.addEventListener('input', refreshSummary);
+  noteInput.addEventListener('input', ()=>{
+    notePreview.textContent = noteInput.value || 'یادداشت پیش‌نمایش';
+    notePreview.style.display = noteInput.value ? 'block' : 'none';
+    setNotePosition(notePosition.x, notePosition.y);
+    refreshSummary();
+  });
+  lightEffectInput.addEventListener('change', ()=>{updatePreview(); refreshSummary();});
+  videoEffectInput.addEventListener('change', ()=>{updatePreview(); refreshSummary();});
 
   videoInput.addEventListener('change', (e)=>{
     const file = e.target.files[0];
@@ -227,6 +429,61 @@
     }
   });
 
+  kickoffBtn.addEventListener('click', ()=>{
+    kickoffBtn.textContent = 'رندر پایه فعال شد';
+    kickoffBtn.disabled = true;
+    kickoffBtn.classList.add('success');
+    livePreview.classList.add('fx-glow');
+  });
+
+  function setNotePosition(xRatio, yRatio){
+    notePosition = {x: Math.min(Math.max(xRatio,0),1), y: Math.min(Math.max(yRatio,0),1)};
+    const rect = livePreview.getBoundingClientRect();
+    notePreview.style.left = (notePosition.x * rect.width - notePreview.offsetWidth/2) + 'px';
+    notePreview.style.top = (notePosition.y * rect.height - notePreview.offsetHeight/2) + 'px';
+    notePreview.style.display = noteInput.value ? 'block' : 'none';
+  }
+
+  function startNoteDrag(e){
+    draggingNote = true;
+    const rect = notePreview.getBoundingClientRect();
+    dragOffset.x = e.clientX - rect.left;
+    dragOffset.y = e.clientY - rect.top;
+    e.preventDefault();
+  }
+
+  function onDrag(e){
+    if(!draggingNote) return;
+    const previewRect = livePreview.getBoundingClientRect();
+    let x = e.clientX - previewRect.left - dragOffset.x + notePreview.offsetWidth/2;
+    let y = e.clientY - previewRect.top - dragOffset.y + notePreview.offsetHeight/2;
+    x = Math.min(Math.max(x,0), previewRect.width);
+    y = Math.min(Math.max(y,0), previewRect.height);
+    setNotePosition(x/previewRect.width, y/previewRect.height);
+  }
+
+  function endNoteDrag(){
+    draggingNote = false;
+    notePosXInput.value = notePosition.x.toFixed(3);
+    notePosYInput.value = notePosition.y.toFixed(3);
+    refreshSummary();
+  }
+
+  notePreview.addEventListener('mousedown', startNoteDrag);
+  window.addEventListener('mousemove', onDrag);
+  window.addEventListener('mouseup', endNoteDrag);
+  resetNoteBtn.addEventListener('click', ()=>{setNotePosition(0.4,0.4); endNoteDrag();});
+
+  formEl.addEventListener('submit', ()=>{
+    notePosXInput.value = notePosition.x.toFixed(3);
+    notePosYInput.value = notePosition.y.toFixed(3);
+    splitsPayloadInput.value = JSON.stringify(splits);
+  });
+
+  ensureSplits(Number(splitCount.value));
+  notePreview.textContent = noteInput.value || 'یادداشت پیش‌نمایش';
+  notePreview.style.display = noteInput.value ? 'block' : 'none';
+  setNotePosition(notePosition.x, notePosition.y);
   updatePreview();
   refreshSummary();
 </script>
