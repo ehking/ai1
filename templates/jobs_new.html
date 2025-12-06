@@ -57,7 +57,12 @@
             </select>
             <div style="margin-top:8px;">
               <label>نام پروژه جدید (اختیاری)</label>
-              <input type="text" name="project_name_new" id="project-name-new" placeholder="مثلاً: پروژه کلیپ جدید">
+              <input type="text" name="project_name_new" id="project-name-new" placeholder="مثلاً: پروژه کلیپ جدید" list="project-name-options">
+              <datalist id="project-name-options">
+                {% for p in projects %}
+                <option value="{{ p.name }}"></option>
+                {% endfor %}
+              </datalist>
               <p class="muted" style="margin-top:4px;">در صورت انتخاب پروژه موجود، این فیلد نادیده گرفته می‌شود.</p>
             </div>
           </div>
@@ -241,6 +246,16 @@
   let notePosition = {x: 0.4, y: 0.4};
   let draggingNote = false;
   let dragOffset = {x:0, y:0};
+
+  projectSelect.addEventListener('change', ()=>{
+    const selectedOption = projectSelect.options[projectSelect.selectedIndex];
+    if(projectSelect.value){
+      projectNameNew.value = selectedOption?.text || '';
+    } else {
+      projectNameNew.value = '';
+    }
+    refreshSummary();
+  });
 
   const makeId = ()=> (crypto.randomUUID ? crypto.randomUUID() : 'split-' + Math.random().toString(16).slice(2));
 
